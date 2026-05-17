@@ -1,12 +1,20 @@
+from typing import Dict, Any, Callable
+from homeassistant.core import HomeAssistant
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
-from homeassistant.const import PERCENTAGE, UnitOfElectricPotential
+from homeassistant.const import PERCENTAGE
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from .const import DOMAIN
 
-async def async_setup_entry(hass, config_entry, async_add_entities):
+async def async_setup_entry(
+    hass: HomeAssistant, 
+    config_entry: ConfigEntry, 
+    async_add_entities: AddEntitiesCallback
+) -> None:
     
-    def async_discover_device(data):
-        device_id = data.get("id")
+    def async_discover_device(data: Dict[str, Any]) -> None:
+        device_id: str = data.get("id", "")
         async_add_entities([EdisioBatterySensor(device_id)])
 
     async_dispatcher_connect(hass, f"{DOMAIN}_discover", async_discover_device)
@@ -16,18 +24,18 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         async_add_entities([EdisioBatterySensor(device_id)])
 
 class EdisioBatterySensor(SensorEntity):
-    _attr_has_entity_name = True
+    _attr_has_entity_name: bool = True
     _attr_device_class = SensorDeviceClass.BATTERY
-    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_native_unit_of_measurement: str = PERCENTAGE
 
-    def __init__(self, device_id):
-        self._device_id = device_id
-        self._attr_unique_id = f"{device_id}_battery"
-        self._attr_name = "Battery"
-        self._attr_native_value = None
+    def __init__(self, device_id: str) -> None:
+        self._device_id: str = device_id
+        self._attr_unique_id: str = f"{device_id}_battery"
+        self._attr_name: str = "Battery"
+        self._attr_native_value: int | None = None
 
     @property
-    def device_info(self):
+    def device_info(self) -> Dict[str, Any]:
         return {
             "identifiers": {(DOMAIN, self._device_id)},
             "name": f"Edisio EBP8-B {self._device_id}",
@@ -35,7 +43,7 @@ class EdisioBatterySensor(SensorEntity):
             "model": "EBP8-B"
         }
 
-    async def async_added_to_hass(self):
+    async def async_added_to_hass(self) -> None:
         self.async_on_remove(
             async_dispatcher_connect(
                 self.hass, 
@@ -44,15 +52,10 @@ class EdisioBatterySensor(SensorEntity):
             )
         )
 
-    def _update_battery(self, data):
-        battery_level = data.get("battery")
+    def _update_battery(self, data: Dict[str, Any]) -> None:
+        battery_level: str | None = data.get("battery")
         if battery_level is not None:
-            # Simple conversion: 3.3V roughly 100%, though battery string is '139' (which was 4.6V?)
-            # Usually CR2430 is 3V. If battery gives string representation, we convert to percentage.
-            # For simplicity, we just set the raw value or percentage if mapped.
             try:
-                # Edisio battery calculation from plugin: int((bl / 3.3) * 10)
-                # Max 3.3V => 100.
                 self._attr_native_value = min(100, int(battery_level))
                 self.async_write_ha_state()
             except ValueError:

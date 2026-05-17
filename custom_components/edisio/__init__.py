@@ -1,29 +1,30 @@
 import asyncio
+from typing import Dict, Any, List
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from .const import DOMAIN, CONF_SERIAL_PORT
 from .hub import EdisioHub
 
-PLATFORMS = ["sensor"]
+PLATFORMS: List[str] = ["sensor"]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     
-    port = entry.data.get(CONF_SERIAL_PORT)
+    port: str = entry.data.get(CONF_SERIAL_PORT, "")
     hub = EdisioHub(port)
     
     hass.data[DOMAIN][entry.entry_id] = {"port": port, "hub": hub, "devices": set()}
     
-    from homeassistant.helpers.dispatcher import async_dispatcher_send
-    
-    def handle_edisio_event(data: dict):
-        device_id = data.get("id")
+    def handle_edisio_event(data: Dict[str, Any]) -> None:
+        device_id: str = data.get("id", "")
         
         # Fire edisio_button_event for automation triggers
-        press_type = "long_press" if data.get("action") in ["up", "down"] else "short_press"
-        event_data = {
+        action: str = data.get("action", "")
+        press_type: str = "long_press" if action in ["up", "down"] else "short_press"
+        event_data: Dict[str, str] = {
             "device_id": device_id,
-            "button": data.get("button"),
+            "button": data.get("button", ""),
             "type": press_type
         }
         hass.bus.async_fire("edisio_button_event", event_data)
@@ -42,7 +43,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    unload_ok: bool = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
     return unload_ok
