@@ -1,0 +1,116 @@
+blueprint:
+  name: Edisio EBP8-B Switch Controller
+  description: Create automations for the Edisio EBP8-B switch, easily mapping short and long presses to actions. Use this to migrate away from legacy RFPlayer automations.
+  domain: automation
+  input:
+    edisio_device_id:
+      name: Edisio Device ID (e.g. 00000001)
+      description: The hexadecimal ID of the Edisio switch you want to control.
+      default: ""
+    button_1_short:
+      name: Button 1 - Short Press
+      description: Action to run on Button 1 short press
+      default: []
+      selector:
+        action: {}
+    button_1_long:
+      name: Button 1 - Long Press
+      description: Action to run on Button 1 long press
+      default: []
+      selector:
+        action: {}
+    button_2_short:
+      name: Button 2 - Short Press
+      description: Action to run on Button 2 short press
+      default: []
+      selector:
+        action: {}
+    button_2_long:
+      name: Button 2 - Long Press
+      description: Action to run on Button 2 long press
+      default: []
+      selector:
+        action: {}
+    button_3_short:
+      name: Button 3 - Short Press
+      description: Action to run on Button 3 short press
+      default: []
+      selector:
+        action: {}
+    button_3_long:
+      name: Button 3 - Long Press
+      description: Action to run on Button 3 long press
+      default: []
+      selector:
+        action: {}
+    button_4_short:
+      name: Button 4 - Short Press
+      description: Action to run on Button 4 short press
+      default: []
+      selector:
+        action: {}
+    button_4_long:
+      name: Button 4 - Long Press
+      description: Action to run on Button 4 long press
+      default: []
+      selector:
+        action: {}
+    button_5_short:
+      name: Button 5 - Short Press
+      description: Action to run on Button 5 short press
+      default: []
+      selector:
+        action: {}
+    button_5_long:
+      name: Button 5 - Long Press
+      description: Action to run on Button 5 long press
+      default: []
+      selector:
+        action: {}
+
+trigger:
+  - platform: event
+    event_type: edisio_button_event
+    event_data:
+      device_id: !input edisio_device_id
+
+action:
+  - variables:
+      button: "{{ trigger.event.data.button }}"
+      press_type: "{{ trigger.event.data.type }}"
+  - choose:
+      # Button 1
+      - conditions:
+          - "{{ button == '01' and press_type == 'short_press' }}"
+        sequence: !input button_1_short
+      - conditions:
+          - "{{ button == '01' and press_type == 'long_press' }}"
+        sequence: !input button_1_long
+      # Button 2
+      - conditions:
+          - "{{ button == '02' and press_type == 'short_press' }}"
+        sequence: !input button_2_short
+      - conditions:
+          - "{{ button == '02' and press_type == 'long_press' }}"
+        sequence: !input button_2_long
+      # Button 3
+      - conditions:
+          - "{{ button == '03' and press_type == 'short_press' }}"
+        sequence: !input button_3_short
+      - conditions:
+          - "{{ button == '03' and press_type == 'long_press' }}"
+        sequence: !input button_3_long
+      # Button 4
+      - conditions:
+          - "{{ button == '04' and press_type == 'short_press' }}"
+        sequence: !input button_4_short
+      - conditions:
+          - "{{ button == '04' and press_type == 'long_press' }}"
+        sequence: !input button_4_long
+      # Button 5
+      - conditions:
+          - "{{ button == '05' and press_type == 'short_press' }}"
+        sequence: !input button_5_short
+      - conditions:
+          - "{{ button == '05' and press_type == 'long_press' }}"
+        sequence: !input button_5_long
