@@ -11,6 +11,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     
     port = entry.data.get(CONF_SERIAL_PORT)
     hub = EdisioHub(port)
+    
+    def handle_edisio_event(data: dict):
+        # Fire edisio_button_event for automation triggers
+        press_type = "long_press" if data.get("action") in ["up", "down"] else "short_press"
+        event_data = {
+            "device_id": data.get("id"),
+            "button": data.get("button"),
+            "type": press_type
+        }
+        hass.bus.async_fire("edisio_button_event", event_data)
+
+    hub.register_callback(handle_edisio_event)
     await hub.connect()
     
     hass.data[DOMAIN][entry.entry_id] = {"port": port, "hub": hub}
