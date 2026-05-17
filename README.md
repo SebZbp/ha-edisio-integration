@@ -4,6 +4,11 @@ A native, strictly typed Home Assistant integration to manage the Edisio RF prot
 
 This integration is explicitly designed to replace legacy implementations (like the RFPlayer integration) by offering direct, latency-free communication with your Edisio switch bases, particularly focusing on the **EBP8-B 8-button switch**.
 
+## Hardware Requirements
+
+To use this integration, you **must** have the official **Edisio USB PC Dongle (868 MHz)** plugged into your Home Assistant server.
+The dongle is built using standard FTDI (FT232R) or Prolific (PL2303) USB-to-Serial chipsets, which are automatically discovered by Home Assistant.
+
 ## Features
 
 - **Direct USB Communication:** Parses the 433/868 MHz raw RF frames natively within Home Assistant.
