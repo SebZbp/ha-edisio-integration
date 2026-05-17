@@ -1,0 +1,21 @@
+{
+  "domain": "edisio",
+  "name": "Edisio Smart Home",
+  "version": "1.0.0",
+  "documentation": "https://github.com/seb_zawadski/ha-edisio-integration",
+  "dependencies": [],
+  "codeowners": [],
+  "requirements": ["pyserial-asyncio==0.6"],
+  "usb": [
+    {
+      "vid": "0403",
+      "pid": "6001",
+      "description": "*Edisio*"
+    },
+    {
+      "vid": "067B",
+      "pid": "2303"
+    }
+  ],
+  "iot_class": "local_push"
+}

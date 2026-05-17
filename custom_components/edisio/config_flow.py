@@ -1,0 +1,49 @@
+import voluptuous as vol
+from homeassistant import config_entries
+from homeassistant.core import callback
+from .const import DOMAIN, CONF_SERIAL_PORT, CONF_ACTIVE_BUTTONS, DEFAULT_ACTIVE_BUTTONS
+
+class EdisioConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    VERSION = 1
+
+    async def async_step_user(self, user_input=None):
+        if user_input is not None:
+            return self.async_create_entry(title="Edisio Dongle", data=user_input)
+
+        return self.async_show_form(
+            step_id="user",
+            data_schema=vol.Schema({vol.Required(CONF_SERIAL_PORT): str}),
+        )
+
+    async def async_step_usb(self, discovery_info):
+        self._serial_port = discovery_info.device
+        await self.async_set_unique_id(self._serial_port)
+        self._abort_if_unique_id_configured()
+        
+        return self.async_show_form(
+            step_id="usb",
+            description_placeholders={"serial_port": self._serial_port}
+        )
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        return EdisioOptionsFlowHandler(config_entry)
+
+class EdisioOptionsFlowHandler(config_entries.OptionsFlow):
+    def __init__(self, config_entry):
+        self.config_entry = config_entry
+
+    async def async_step_init(self, user_input=None):
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema({
+                vol.Optional(
+                    CONF_ACTIVE_BUTTONS,
+                    default=self.config_entry.options.get(CONF_ACTIVE_BUTTONS, DEFAULT_ACTIVE_BUTTONS)
+                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=5))
+            })
+        )
