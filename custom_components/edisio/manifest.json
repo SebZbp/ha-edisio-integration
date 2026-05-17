@@ -2,7 +2,7 @@
   "domain": "edisio",
   "name": "Edisio Smart Home",
   "version": "1.0.0",
-  "documentation": "https://github.com/seb_zawadski/ha-edisio-integration",
+  "documentation": "https://github.com/SebZbp/ha-edisio-integration",
   "dependencies": [],
   "codeowners": [],
   "requirements": ["pyserial-asyncio==0.6"],
