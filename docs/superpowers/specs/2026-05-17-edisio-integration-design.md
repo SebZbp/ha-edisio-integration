@@ -39,5 +39,11 @@ To prevent interference from neighboring Edisio networks, the integration will f
 - **Reconnection:** If the USB dongle is removed or the serial connection is lost, `SerialException` will be caught. The integration will enter a background retry loop and mark associated entities as `unavailable` until the connection is restored.
 - **Protocol Errors:** Malformed 433/868 MHz packets will be logged to the `debug` level and gracefully discarded without halting the event loop.
 
+## Migration & RFPlayer Coexistence
+- **Coexistence:** The new Edisio integration will use its own dedicated USB dongle (or share via a serial multiplexer if applicable, though a dedicated Edisio dongle is recommended). It will operate independently of the RFPlayer integration, allowing both to run simultaneously during the migration period.
+- **Migration Helpers:** 
+  - To ease the transition for dozens of EBP8-B switches, the integration will document the exact mapping between RFPlayer entities and the new `edisio_button_event` triggers.
+  - We will provide a Home Assistant Blueprint that can "bridge" the new integration's events to the old RFPlayer format, allowing existing automations to continue working without modification until they are natively migrated.
+
 ## Testing
 - Unit tests will mock the serial byte streams to verify that `edisio_api.py` correctly translates raw hex packets into the expected EBP8-B button numbers, press types, and battery levels.
