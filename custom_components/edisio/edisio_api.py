@@ -1,5 +1,8 @@
 import binascii
+import logging
 from typing import Dict, Any
+
+_LOGGER = logging.getLogger(__name__)
 
 def is_valid_packet(message: str) -> bool:
     message = message.replace(' ', '')
@@ -7,13 +10,17 @@ def is_valid_packet(message: str) -> bool:
         int(message, 16)
         raw: bytes = binascii.unhexlify(message)
         if len(raw) < 16:
+            _LOGGER.debug("Edisio Packet too short: %s", message)
             return False
         if raw[0] != 0x6C or raw[1] != 0x76 or raw[2] != 0x63:
+            _LOGGER.debug("Edisio Packet invalid header: %s", message)
             return False
         if raw[-1] != 0x0A or raw[-2] != 0x0D or raw[-3] != 0x64:
+            _LOGGER.debug("Edisio Packet invalid footer: %s", message)
             return False
         return True
-    except Exception:
+    except Exception as e:
+        _LOGGER.debug("Edisio Packet exception: %s", e)
         return False
 
 _decode_value: Dict[str, str] = {

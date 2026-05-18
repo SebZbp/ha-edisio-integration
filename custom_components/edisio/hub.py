@@ -4,6 +4,9 @@ from typing import Callable, Optional, List, Dict, Any, Tuple
 from .edisio_api import decode_packet
 
 import binascii
+import logging
+
+_LOGGER = logging.getLogger(__name__)
 
 class EdisioProtocol(asyncio.Protocol):
     def __init__(self, packet_callback: Optional[Callable[[str], None]] = None) -> None:
@@ -13,8 +16,10 @@ class EdisioProtocol(asyncio.Protocol):
 
     def connection_made(self, transport: asyncio.BaseTransport) -> None:
         self.transport = transport # type: ignore
+        _LOGGER.info("Edisio serial connection established")
 
     def data_received(self, data: bytes) -> None:
+        _LOGGER.debug("Raw data received: %s", binascii.hexlify(data).decode("ascii").upper())
         self.buffer += data
         while b"\x64\x0d\x0a" in self.buffer:
             packet, self.buffer = self.buffer.split(b"\x64\x0d\x0a", 1)
@@ -23,6 +28,7 @@ class EdisioProtocol(asyncio.Protocol):
             if b"\x6c" in full_packet:
                 full_packet = full_packet[full_packet.index(b"\x6c"):]
                 packet_str: str = binascii.hexlify(full_packet).decode("ascii").upper()
+                _LOGGER.info("Edisio Packet Extracted: %s", packet_str)
                 if self.packet_callback:
                     self.packet_callback(packet_str)
 
