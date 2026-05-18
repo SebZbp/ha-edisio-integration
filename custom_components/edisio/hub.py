@@ -3,6 +3,8 @@ import serial_asyncio_fast
 from typing import Callable, Optional, List, Dict, Any, Tuple
 from .edisio_api import decode_packet
 
+import binascii
+
 class EdisioProtocol(asyncio.Protocol):
     def __init__(self, packet_callback: Optional[Callable[[str], None]] = None) -> None:
         self.transport: Optional[asyncio.Transport] = None
@@ -14,11 +16,15 @@ class EdisioProtocol(asyncio.Protocol):
 
     def data_received(self, data: bytes) -> None:
         self.buffer += data
-        while b"\r\n" in self.buffer:
-            packet, self.buffer = self.buffer.split(b"\r\n", 1)
-            packet_str: str = (packet + b"\r\n").decode("utf-8", errors="ignore").replace(" ", "")
-            if self.packet_callback:
-                self.packet_callback(packet_str)
+        while b"\x64\x0d\x0a" in self.buffer:
+            packet, self.buffer = self.buffer.split(b"\x64\x0d\x0a", 1)
+            full_packet = packet + b"\x64\x0d\x0a"
+            
+            if b"\x6c" in full_packet:
+                full_packet = full_packet[full_packet.index(b"\x6c"):]
+                packet_str: str = binascii.hexlify(full_packet).decode("ascii").upper()
+                if self.packet_callback:
+                    self.packet_callback(packet_str)
 
 class EdisioHub:
     def __init__(self, port: str) -> None:
