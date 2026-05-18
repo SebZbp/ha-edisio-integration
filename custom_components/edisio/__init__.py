@@ -1,7 +1,7 @@
 import asyncio
 from typing import Dict, Any, List
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from .const import DOMAIN, CONF_SERIAL_PORT
 from .hub import EdisioHub
@@ -16,6 +16,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     
     hass.data[DOMAIN][entry.entry_id] = {"port": port, "hub": hub, "devices": set()}
     
+    @callback
     def handle_edisio_event(data: Dict[str, Any]) -> None:
         device_id: str = data.get("id", "")
         

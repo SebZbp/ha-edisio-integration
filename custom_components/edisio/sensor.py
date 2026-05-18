@@ -15,7 +15,7 @@ async def async_setup_entry(
     
     def async_discover_device(data: Dict[str, Any]) -> None:
         device_id: str = data.get("id", "")
-        async_add_entities([EdisioBatterySensor(device_id)])
+        async_add_entities([EdisioBatterySensor(device_id)], update_before_add=False)
 
     async_dispatcher_connect(hass, f"{DOMAIN}_discover", async_discover_device)
     
