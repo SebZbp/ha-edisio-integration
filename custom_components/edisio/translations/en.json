@@ -1,0 +1,26 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Edisio USB Serial connection",
+        "data": {
+          "serial_port": "Serial Port (e.g. /dev/ttyUSB0)"
+        }
+      },
+      "usb": {
+        "title": "Discovered Edisio USB dongle",
+        "description": "Do you want to configure the Edisio integration with this USB dongle at {serial_port}?"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "EBP8-B Switch Configuration",
+        "data": {
+          "active_buttons": "Number of active buttons (1-5)"
+        }
+      }
+    }
+  }
+}
