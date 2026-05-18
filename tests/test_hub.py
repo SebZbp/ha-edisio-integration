@@ -6,7 +6,7 @@ from custom_components.edisio.hub import EdisioHub, EdisioProtocol
 async def test_edisio_hub_connect():
     hub = EdisioHub(port="/dev/ttyUSB0")
     
-    with patch("serial_asyncio.create_serial_connection") as mock_create_connection:
+    with patch("serial_asyncio_fast.create_serial_connection") as mock_create_connection:
         mock_transport = MagicMock()
         mock_protocol = EdisioProtocol()
         mock_create_connection.return_value = (mock_transport, mock_protocol)

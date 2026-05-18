@@ -1,5 +1,5 @@
 import asyncio
-import serial_asyncio
+import serial_asyncio_fast
 from typing import Callable, Optional, List, Dict, Any, Tuple
 from .edisio_api import decode_packet
 
@@ -38,7 +38,7 @@ class EdisioHub:
 
     async def connect(self) -> None:
         loop = asyncio.get_running_loop()
-        transport, protocol = await serial_asyncio.create_serial_connection(
+        transport, protocol = await serial_asyncio_fast.create_serial_connection(
             loop, lambda: EdisioProtocol(self._handle_packet), self.port, baudrate=9600
         )
         self._transport = transport

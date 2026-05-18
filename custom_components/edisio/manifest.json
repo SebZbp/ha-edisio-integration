@@ -1,12 +1,12 @@
 {
   "domain": "edisio",
   "name": "Edisio Smart Home",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "config_flow": true,
   "documentation": "https://github.com/SebZbp/ha-edisio-integration",
   "dependencies": [],
   "codeowners": [],
-  "requirements": ["pyserial-asyncio==0.6"],
+  "requirements": ["pyserial-asyncio-fast==0.16"],
   "usb": [
     {
       "vid": "0403",
