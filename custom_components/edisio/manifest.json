@@ -1,7 +1,7 @@
 {
   "domain": "edisio",
   "name": "Edisio Smart Home",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "config_flow": true,
   "documentation": "https://github.com/SebZbp/ha-edisio-integration",
   "dependencies": [],
