@@ -1,5 +1,8 @@
 {
   "config": {
+    "abort": {
+      "single_instance_allowed": "Only a single configuration of Edisio is allowed."
+    },
     "step": {
       "user": {
         "title": "Edisio USB Serial connection",

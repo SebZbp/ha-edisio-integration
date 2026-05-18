@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, Optional
 
 import voluptuous as vol
@@ -8,6 +9,8 @@ from homeassistant.components import usb
 
 from .const import DOMAIN, CONF_SERIAL_PORT, CONF_ACTIVE_BUTTONS, DEFAULT_ACTIVE_BUTTONS
 
+_LOGGER = logging.getLogger(__name__)
+
 class EdisioConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
     _serial_port: Optional[str] = None
@@ -15,34 +18,52 @@ class EdisioConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: Optional[Dict[str, Any]] = None
     ) -> FlowResult:
-        if user_input is not None:
-            return self.async_create_entry(title="Edisio Dongle", data=user_input)
+        try:
+            if self._async_current_entries():
+                return self.async_abort(reason="single_instance_allowed")
 
-        return self.async_show_form(
-            step_id="user",
-            data_schema=vol.Schema({vol.Required(CONF_SERIAL_PORT): str}),
-        )
+            if user_input is not None:
+                return self.async_create_entry(title="Edisio Dongle", data=user_input)
+
+            return self.async_show_form(
+                step_id="user",
+                data_schema=vol.Schema({vol.Required(CONF_SERIAL_PORT): str}),
+            )
+        except Exception as e:
+            _LOGGER.exception("Error in async_step_user: %s", e)
+            raise
 
     async def async_step_usb(self, discovery_info: usb.UsbServiceInfo) -> FlowResult:
-        self._serial_port = discovery_info.device
-        await self.async_set_unique_id(self._serial_port)
-        self._abort_if_unique_id_configured()
-        
-        return await self.async_step_usb_confirm()
+        try:
+            if self._async_current_entries():
+                return self.async_abort(reason="single_instance_allowed")
+
+            self._serial_port = discovery_info.device
+            await self.async_set_unique_id(self._serial_port)
+            self._abort_if_unique_id_configured()
+            
+            return await self.async_step_usb_confirm()
+        except Exception as e:
+            _LOGGER.exception("Error in async_step_usb: %s", e)
+            raise
 
     async def async_step_usb_confirm(
         self, user_input: Optional[Dict[str, Any]] = None
     ) -> FlowResult:
-        if user_input is not None:
-            return self.async_create_entry(
-                title="Edisio Dongle", 
-                data={CONF_SERIAL_PORT: self._serial_port}
-            )
+        try:
+            if user_input is not None:
+                return self.async_create_entry(
+                    title="Edisio Dongle", 
+                    data={CONF_SERIAL_PORT: self._serial_port}
+                )
 
-        return self.async_show_form(
-            step_id="usb_confirm",
-            description_placeholders={"serial_port": self._serial_port or ""}
-        )
+            return self.async_show_form(
+                step_id="usb_confirm",
+                description_placeholders={"serial_port": self._serial_port or ""}
+            )
+        except Exception as e:
+            _LOGGER.exception("Error in async_step_usb_confirm: %s", e)
+            raise
 
     @staticmethod
     @callback
@@ -58,15 +79,19 @@ class EdisioOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_init(
         self, user_input: Optional[Dict[str, Any]] = None
     ) -> FlowResult:
-        if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+        try:
+            if user_input is not None:
+                return self.async_create_entry(title="", data=user_input)
 
-        return self.async_show_form(
-            step_id="init",
-            data_schema=vol.Schema({
-                vol.Optional(
-                    CONF_ACTIVE_BUTTONS,
-                    default=self.config_entry.options.get(CONF_ACTIVE_BUTTONS, DEFAULT_ACTIVE_BUTTONS)
-                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=5))
-            })
-        )
+            return self.async_show_form(
+                step_id="init",
+                data_schema=vol.Schema({
+                    vol.Optional(
+                        CONF_ACTIVE_BUTTONS,
+                        default=self.config_entry.options.get(CONF_ACTIVE_BUTTONS, DEFAULT_ACTIVE_BUTTONS)
+                    ): int
+                })
+            )
+        except Exception as e:
+            _LOGGER.exception("Error in async_step_init: %s", e)
+            raise
