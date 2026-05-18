@@ -7,7 +7,7 @@
           "serial_port": "Serial Port (e.g. /dev/ttyUSB0)"
         }
       },
-      "usb": {
+      "usb_confirm": {
         "title": "Discovered Edisio USB dongle",
         "description": "Do you want to configure the Edisio integration with this USB dongle at {serial_port}?"
       }

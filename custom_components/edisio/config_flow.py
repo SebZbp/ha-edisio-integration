@@ -28,9 +28,20 @@ class EdisioConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(self._serial_port)
         self._abort_if_unique_id_configured()
         
+        return await self.async_step_usb_confirm()
+
+    async def async_step_usb_confirm(
+        self, user_input: Optional[Dict[str, Any]] = None
+    ) -> FlowResult:
+        if user_input is not None:
+            return self.async_create_entry(
+                title="Edisio Dongle", 
+                data={CONF_SERIAL_PORT: self._serial_port}
+            )
+
         return self.async_show_form(
-            step_id="usb",
-            description_placeholders={"serial_port": self._serial_port}
+            step_id="usb_confirm",
+            description_placeholders={"serial_port": self._serial_port or ""}
         )
 
     @staticmethod
