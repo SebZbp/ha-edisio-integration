@@ -65,30 +65,37 @@ class EdisioConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             _LOGGER.exception("Error in async_step_usb_confirm: %s", e)
             raise
 
-    @staticmethod
-    @callback
-    def async_get_options_flow(
-        config_entry: config_entries.ConfigEntry
-    ) -> config_entries.OptionsFlow:
-        return EdisioOptionsFlowHandler()
+    async def async_step_device(self, discovery_info: Dict[str, Any]) -> FlowResult:
+        self._device_id = discovery_info["device_id"]
+        await self.async_set_unique_id(f"edisio_{self._device_id}")
+        self._abort_if_unique_id_configured()
+        return await self.async_step_device_confirm()
 
-class EdisioOptionsFlowHandler(config_entries.OptionsFlow):
-    async def async_step_init(
+    async def async_step_device_confirm(
         self, user_input: Optional[Dict[str, Any]] = None
     ) -> FlowResult:
-        try:
-            if user_input is not None:
-                return self.async_create_entry(title="", data=user_input)
-
-            return self.async_show_form(
-                step_id="init",
-                data_schema=vol.Schema({
-                    vol.Optional(
-                        CONF_ACTIVE_BUTTONS,
-                        default=self.config_entry.options.get(CONF_ACTIVE_BUTTONS, DEFAULT_ACTIVE_BUTTONS)
-                    ): int
-                })
+        if user_input is not None:
+            entries = self._async_current_entries()
+            if entries:
+                entry = entries[0]
+                devices = dict(entry.options.get("devices", {}))
+                devices[self._device_id] = {
+                    "active_buttons": user_input["active_buttons"]
+                }
+                new_options = dict(entry.options)
+                new_options["devices"] = devices
+                self.hass.config_entries.async_update_entry(entry, options=new_options)
+            return self.async_abort(
+                reason="device_configured",
+                description_placeholders={"device_id": self._device_id}
             )
-        except Exception as e:
-            _LOGGER.exception("Error in async_step_init: %s", e)
-            raise
+
+        return self.async_show_form(
+            step_id="device_confirm",
+            data_schema=vol.Schema({
+                vol.Required(CONF_ACTIVE_BUTTONS, default=DEFAULT_ACTIVE_BUTTONS): vol.All(
+                    vol.Coerce(int), vol.Range(min=1, max=5)
+                )
+            }),
+            description_placeholders={"device_id": self._device_id}
+        )

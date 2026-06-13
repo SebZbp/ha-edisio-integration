@@ -1,7 +1,8 @@
 {
   "config": {
     "abort": {
-      "single_instance_allowed": "Only a single configuration of Edisio is allowed."
+      "single_instance_allowed": "Only a single configuration of Edisio is allowed.",
+      "device_configured": "Edisio device {device_id} configured successfully."
     },
     "step": {
       "user": {
@@ -13,13 +14,10 @@
       "usb_confirm": {
         "title": "Discovered Edisio USB dongle",
         "description": "Do you want to configure the Edisio integration with this USB dongle at {serial_port}?"
-      }
-    }
-  },
-  "options": {
-    "step": {
-      "init": {
-        "title": "EBP8-B Switch Configuration",
+      },
+      "device_confirm": {
+        "title": "Configure Edisio Device {device_id}",
+        "description": "Please enter the number of active buttons on the EBP8-B switch board.",
         "data": {
           "active_buttons": "Number of active buttons (1-5)"
         }

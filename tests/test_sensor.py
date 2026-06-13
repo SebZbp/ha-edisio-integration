@@ -41,3 +41,19 @@ async def test_sensor_creation_and_update(mock_dispatcher_connect):
     
     assert sensor.native_value == 85
     sensor.async_write_ha_state.assert_called_once()
+
+@pytest.mark.asyncio
+async def test_sensor_setup_from_options():
+    hass = MagicMock()
+    config_entry = MagicMock()
+    config_entry.entry_id = "test_entry"
+    config_entry.options = {"devices": {"device_abc": {"active_buttons": 4}}}
+    hass.data = {DOMAIN: {"test_entry": {"devices": set()}}}
+    
+    async_add_entities = MagicMock()
+    await async_setup_entry(hass, config_entry, async_add_entities)
+    
+    async_add_entities.assert_called_once()
+    entities = async_add_entities.call_args[0][0]
+    assert len(entities) == 1
+    assert entities[0].unique_id == "device_abc_battery"

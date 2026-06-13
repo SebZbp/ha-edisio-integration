@@ -19,8 +19,11 @@ async def async_setup_entry(
 
     async_dispatcher_connect(hass, f"{DOMAIN}_discover", async_discover_device)
     
-    # Check if there are already devices in hass.data
-    for device_id in hass.data[DOMAIN][config_entry.entry_id]["devices"]:
+    # Set up sensors for all configured devices from config entry options
+    configured_devices = config_entry.options.get("devices", {})
+    for device_id in configured_devices:
+        if device_id not in hass.data[DOMAIN][config_entry.entry_id]["devices"]:
+            hass.data[DOMAIN][config_entry.entry_id]["devices"].add(device_id)
         async_add_entities([EdisioBatterySensor(device_id, config_entry.entry_id)])
 
 class EdisioBatterySensor(SensorEntity):
