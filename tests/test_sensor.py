@@ -43,7 +43,9 @@ async def test_sensor_creation_and_update(mock_dispatcher_connect):
     button_sensors = [e for e in entities if isinstance(e, EdisioButtonSensor)]
     assert len(button_sensors) == 5
     assert button_sensors[0].unique_id == "01_button_01"
+    assert button_sensors[0].name == "Button 1"
     assert button_sensors[4].unique_id == "01_button_08"
+    assert button_sensors[4].name == "Button 5"
 
     # Test battery update
     battery_sensor = entities[0]
@@ -74,7 +76,9 @@ async def test_sensor_setup_from_options():
     assert len(entities) == 3
     assert entities[0].unique_id == "device_abc_battery"
     assert entities[1].unique_id == "device_abc_button_04"
+    assert entities[1].name == "Button 1"
     assert entities[2].unique_id == "device_abc_button_06"
+    assert entities[2].name == "Button 2"
 
 @pytest.mark.asyncio
 async def test_button_sensor_press_and_reset():
@@ -88,12 +92,13 @@ async def test_button_sensor_press_and_reset():
         
     hass.async_create_task = mock_async_create_task
     
-    button_sensor = EdisioButtonSensor("device_123", "05", "test_entry")
+    button_sensor = EdisioButtonSensor("device_123", "05", 3, "test_entry")
     button_sensor.hass = hass
     button_sensor.async_write_ha_state = MagicMock()
     
     # Check initial state
     assert button_sensor.native_value == "normal"
+    assert button_sensor.name == "Button 3"
     
     # 1. Test short press update (non-long press action)
     button_sensor._update_button({"id": "device_123", "button": "05", "action": "toggle"})
