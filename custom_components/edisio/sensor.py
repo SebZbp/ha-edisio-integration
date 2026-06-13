@@ -15,21 +15,25 @@ async def async_setup_entry(
     
     def async_discover_device(data: Dict[str, Any]) -> None:
         device_id: str = data.get("id", "")
-        async_add_entities([EdisioBatterySensor(device_id)], update_before_add=False)
+        async_add_entities([EdisioBatterySensor(device_id, config_entry.entry_id)], update_before_add=False)
 
     async_dispatcher_connect(hass, f"{DOMAIN}_discover", async_discover_device)
     
-    # Check if there are already devices in hass.data
-    for device_id in hass.data[DOMAIN][config_entry.entry_id]["devices"]:
-        async_add_entities([EdisioBatterySensor(device_id)])
+    # Set up sensors for all configured devices from config entry options
+    configured_devices = config_entry.options.get("devices", {})
+    for device_id in configured_devices:
+        if device_id not in hass.data[DOMAIN][config_entry.entry_id]["devices"]:
+            hass.data[DOMAIN][config_entry.entry_id]["devices"].add(device_id)
+        async_add_entities([EdisioBatterySensor(device_id, config_entry.entry_id)])
 
 class EdisioBatterySensor(SensorEntity):
     _attr_has_entity_name: bool = True
     _attr_device_class = SensorDeviceClass.BATTERY
     _attr_native_unit_of_measurement: str = PERCENTAGE
 
-    def __init__(self, device_id: str) -> None:
+    def __init__(self, device_id: str, entry_id: str) -> None:
         self._device_id: str = device_id
+        self._entry_id: str = entry_id
         self._attr_unique_id: str = f"{device_id}_battery"
         self._attr_name: str = "Battery"
         self._attr_native_value: int | None = None
@@ -40,7 +44,8 @@ class EdisioBatterySensor(SensorEntity):
             "identifiers": {(DOMAIN, self._device_id)},
             "name": f"Edisio EBP8-B {self._device_id}",
             "manufacturer": "Edisio",
-            "model": "EBP8-B"
+            "model": "EBP8-B",
+            "via_device": (DOMAIN, self._entry_id)
         }
 
     async def async_added_to_hass(self) -> None:
