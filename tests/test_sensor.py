@@ -30,6 +30,7 @@ async def test_sensor_creation_and_update(mock_dispatcher_connect):
     sensor = async_add_entities.call_args[0][0][0]
     assert isinstance(sensor, EdisioBatterySensor)
     assert sensor.unique_id == "01_battery"
+    assert sensor.device_info["via_device"] == (DOMAIN, "test_entry")
     
     # 3. Test battery update
     sensor.hass = hass

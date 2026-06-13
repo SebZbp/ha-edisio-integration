@@ -3,6 +3,7 @@ from typing import Dict, Any, List
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_send
+from homeassistant.helpers import device_registry as dr
 from .const import DOMAIN, CONF_SERIAL_PORT
 from .hub import EdisioHub
 
@@ -15,6 +16,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hub = EdisioHub(port)
     
     hass.data[DOMAIN][entry.entry_id] = {"port": port, "hub": hub, "devices": set()}
+
+    # Register Edisio Dongle device in registry
+    device_registry = dr.async_get(hass)
+    device_registry.async_get_or_create(
+        config_entry_id=entry.entry_id,
+        identifiers={(DOMAIN, entry.entry_id)},
+        name="Edisio Dongle",
+        manufacturer="Edisio",
+        model="Dongle",
+    )
     
     @callback
     def handle_edisio_event(data: Dict[str, Any]) -> None:

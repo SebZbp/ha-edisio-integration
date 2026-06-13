@@ -17,7 +17,10 @@ async def test_async_setup_entry_connects_hub():
     entry.data = {"serial_port": "/dev/ttyUSB0"}
     entry.entry_id = "test_entry"
 
-    with patch("custom_components.edisio.EdisioHub") as mock_hub_class:
+    with patch("custom_components.edisio.EdisioHub") as mock_hub_class, \
+         patch("homeassistant.helpers.device_registry.async_get") as mock_async_get:
+        mock_dr = MagicMock()
+        mock_async_get.return_value = mock_dr
         mock_hub_instance = MagicMock()
         mock_hub_instance.connect = AsyncMock()
         mock_hub_class.return_value = mock_hub_instance
@@ -28,6 +31,8 @@ async def test_async_setup_entry_connects_hub():
         mock_hub_class.assert_called_once_with("/dev/ttyUSB0")
         mock_hub_instance.connect.assert_called_once()
         assert hass.data[DOMAIN]["test_entry"]["hub"] == mock_hub_instance
+        mock_async_get.assert_called_once_with(hass)
+        mock_dr.async_get_or_create.assert_called_once()
 
 @pytest.mark.asyncio
 async def test_async_setup_entry_fires_event():
@@ -42,7 +47,10 @@ async def test_async_setup_entry_fires_event():
     entry.data = {"serial_port": "/dev/ttyUSB0"}
     entry.entry_id = "test_entry"
 
-    with patch("custom_components.edisio.EdisioHub") as mock_hub_class:
+    with patch("custom_components.edisio.EdisioHub") as mock_hub_class, \
+         patch("homeassistant.helpers.device_registry.async_get") as mock_async_get:
+        mock_dr = MagicMock()
+        mock_async_get.return_value = mock_dr
         mock_hub_instance = MagicMock()
         mock_hub_instance.connect = AsyncMock()
         mock_hub_class.return_value = mock_hub_instance
