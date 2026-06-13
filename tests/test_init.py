@@ -116,7 +116,8 @@ async def test_init_triggers_discovery_for_unconfigured_device():
         # Verify no event was fired
         hass.bus.async_fire.assert_not_called()
         
-        # Verify config flow was initiated
+        # Verify config flow was initiated via async_create_task
+        hass.async_create_task.assert_called_once()
         hass.config_entries.flow.async_init.assert_called_once_with(
             DOMAIN,
             context={"source": "device", "device_id": "02"},
