@@ -14,18 +14,21 @@ The dongle is built using standard FTDI (FT232R) or Prolific (PL2303) USB-to-Ser
 - **Direct USB Communication:** Parses the 433/868 MHz raw RF frames natively within Home Assistant.
 - **Short & Long Press Support:** Distinguishes between standard clicks and long presses (dimming) directly from the RF frames.
 - **Battery Diagnostics:** Automatically creates battery sensors for discovered Edisio switches, keeping track of power levels dynamically.
-- **Blueprint Migration:** Includes a built-in automation Blueprint to smoothly map legacy RFPlayer logic onto the new `edisio_button_event` architecture.
 
 ## Installation
 
 ### Method 1: HACS (Recommended)
-*(Assuming you add this repository to HACS as a custom repository)*
-1. Open HACS in Home Assistant.
+
+To install via HACS as a custom repository:
+1. Open **HACS** in your Home Assistant dashboard.
 2. Go to **Integrations** -> Top right menu -> **Custom repositories**.
-3. Add `https://github.com/SebZbp/ha-edisio-integration` as an Integration.
-4. Restart Home Assistant.
+3. In the **Repository** field, paste: `https://github.com/SebZbp/ha-edisio-integration`
+4. Select **Integration** as the Category and click **Add**.
+5. Find the **Edisio Smart Home** integration card, click **Download**, and select the latest version.
+6. Restart Home Assistant.
 
 ### Method 2: Manual
+
 1. Download or clone this repository.
 2. Copy the `custom_components/edisio` folder into your Home Assistant's `config/custom_components/` directory.
 3. Restart Home Assistant.
@@ -36,34 +39,64 @@ Once installed and Home Assistant has restarted:
 1. Go to **Settings** -> **Devices & Services**.
 2. Click **Add Integration** and search for **Edisio**.
 3. If your Edisio USB dongle is plugged in, Home Assistant should automatically discover it. Otherwise, manually enter your serial port (e.g., `/dev/ttyUSB0`).
-4. Select the number of physical buttons active on your switch via the Options flow.
+4. Click submit to create the **Edisio Dongle** device.
 
-## Usage: Automations & Blueprints
+## Device Discovery & Configuration
 
-Whenever you press a button on an Edisio switch, this integration fires a native `edisio_button_event` onto the Home Assistant event bus.
+Once the Edisio Dongle is configured:
+1. Press any physical button on a new Edisio switch board.
+2. The integration will automatically intercept the RF signal and trigger a discovery flow.
+3. A discovery notification card will appear on the **Devices & Services** integrations dashboard: **Edisio Device `<device_id>` Discovered**.
+4. Click **Configure** on the discovery card.
+5. You will be prompted to select the number of active buttons on your switch board (Config 1 to Config 5):
+   * **Config 1:** 1 button (Button 5 is active)
+   * **Config 2:** 2 buttons (Buttons 4 & 6 are active)
+   * **Config 3:** 3 buttons (Buttons 2, 7 & 8 are active)
+   * **Config 4:** 4 buttons (Buttons 1, 3, 7 & 8 are active)
+   * **Config 5:** 5 buttons (Buttons 1, 3, 5, 7 & 8 are active)
+6. Click submit. The device is created and nested under the parent **Edisio Dongle** device, generating a battery sensor and sequential button sensors (`Button 1`, `Button 2`, etc.).
 
-### The Easy Way: Using the Blueprint
-To make migration from the old `RFPlayer` integration painless, we've included an Automation Blueprint.
+## Button Sensor States
 
-1. Copy the blueprint from `blueprints/automation/edisio/ebp8b_controller.yaml` to your Home Assistant `blueprints/automation/edisio/` folder (or import it).
-2. Go to **Settings** -> **Automations & Blueprints** -> **Blueprints**.
-3. Create a new automation from the **Edisio EBP8-B Switch Controller** blueprint.
-4. Select your Device ID (e.g., `00000001`).
-5. Use the visual editor to drop in the exact actions you want for short and long presses on each button!
+Button sensors (`Button 1`, `Button 2`, etc.) represent the state of each button:
+- `normal` (Idle)
+- `short-press` (Transitions on toggle/short action)
+- `long-press` (Transitions on up/down actions)
 
-### The Manual Way: Listening to Events
-If you prefer writing manual automations, you can trigger off the raw event. The payload looks like this:
+The state automatically resets back to `normal` after 1 second.
+
+## Usage: Automations
+
+Whenever you press a button on an Edisio switch, this integration fires a native `edisio_button_event` onto the Home Assistant event bus. You can trigger manual automations off this event.
+
+The trigger payload looks like this:
 
 ```yaml
 trigger:
   - platform: event
     event_type: edisio_button_event
     event_data:
-      device_id: "00000001"
-      button: "01"
+      device_id: "06709603"
+      button: "05"
       type: "short_press" # Can be 'short_press' or 'long_press'
 ```
 
 ## Diagnostic Sensors
 
-Upon discovering a new switch, the integration will automatically register a Battery sensor tied to that Device ID. The battery level will be updated dynamically every time the switch is pressed.
+Upon discovering a new switch, the integration automatically registers a Battery sensor tied to that Device ID. The battery level is updated dynamically every time the switch is pressed.
+
+---
+
+## Blueprints (Alpha Version)
+
+> [!WARNING]
+> The blueprint support is currently in **Alpha**. It is functional but undergoing testing.
+
+To make migration from the old `RFPlayer` integration painless, we've included an Automation Blueprint.
+
+### Using the Blueprint
+1. Copy the blueprint from `blueprints/automation/edisio/ebp8b_controller.yaml` to your Home Assistant `blueprints/automation/edisio/` folder (or import it).
+2. Go to **Settings** -> **Automations & Blueprints** -> **Blueprints**.
+3. Create a new automation from the **Edisio EBP8-B Switch Controller** blueprint.
+4. Select your Device ID (e.g., `06709603`).
+5. Use the visual editor to drop in the exact actions you want for short and long presses on each button!
