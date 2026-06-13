@@ -42,10 +42,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     if flow.get("handler") == DOMAIN and flow.get("context", {}).get("device_id") == device_id
                 ]
                 if not in_progress:
-                    hass.config_entries.flow.async_init(
-                        DOMAIN,
-                        context={"source": "device", "device_id": device_id},
-                        data={"device_id": device_id}
+                    hass.async_create_task(
+                        hass.config_entries.flow.async_init(
+                            DOMAIN,
+                            context={"source": "device", "device_id": device_id},
+                            data={"device_id": device_id}
+                        )
                     )
                 return
 
