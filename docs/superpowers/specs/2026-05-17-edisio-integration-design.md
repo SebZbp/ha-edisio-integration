@@ -15,24 +15,28 @@ The project will be built within the `ha-edisio-integration/` directory and is s
 2. **Home Assistant Integration Layer (`custom_components/edisio/`)**
    - Standard Home Assistant custom component architecture.
    - `manifest.json`: Defines the integration and includes USB discovery parameters for FTDI/Prolific chipsets.
-   - `config_flow.py`: Manages the setup UI. Supports automatic USB discovery and fallback manual serial port entry.
-   - `__init__.py`: Manages the lifecycle of the integration and the `edisio_api` connection.
+   - `config_flow.py`: Manages the setup UI. Supports automatic USB discovery, manual serial port entry, and dynamic device-specific discovery flows for incoming EBP8-B devices.
+   - `__init__.py`: Manages the lifecycle of the integration, the `edisio_api` connection, and thread-safe scheduling of events/discovery flows onto the event loop.
 
 ## Scope: EBP8-B Switch Base
 The initial implementation prioritizes the EBP8-B switch.
 
-- **Configuration:** Users can access an Options Flow via the Home Assistant UI to specify how many buttons are physically active on the specific switch board (1, 2, 3, 4, or 5).
+- **Configuration:** When a new EBP8-B switch board is dynamically detected on the RF serial interface, a discovery config flow is initiated in Home Assistant. This prompts the user with a form to specify the number of physically active buttons on that board (1, 2, 3, 4, or 5). Until configured, the device is not created, and button events from it are ignored. The configuration is stored under `devices` mapping in the config entry options. The cogwheel options flow is reserved for future non-device configuration.
 - **Events:** The integration will map short and long presses to native Home Assistant device triggers (`edisio_button_event`). The event payload will contain the `device_id`, `button` number, and press `type` (`short_press` or `long_press`).
 - **Sensors:** The integration will expose diagnostic sensor entities for each paired switch board:
   - **Battery Voltage:** Extracted and decoded from the protocol.
   - **Signal Power (RSSI):** If exposed by the raw RF serial data.
+
+## Device Registry & Hierarchy
+- **Edisio Dongle Device:** A master device representing the USB dongle itself is created in the device registry under the config entry.
+- **EBP8-B Switches:** Each configured EBP8-B switch is registered in the device registry with `"via_device"` pointing to the "Edisio Dongle" device, establishing a clean device hierarchy.
 
 ## Device Discovery (Inclusion Mode)
 To prevent interference from neighboring Edisio networks, the integration will filter out packets from unknown devices by default.
 - A toggle switch (`switch.edisio_inclusion_mode`) or service will be provided to temporarily allow new devices to be paired.
 
 ## Data Flow
-- **Incoming:** `Serial Port` -> `pyserial-asyncio Reader` -> `edisio_api (Decoder)` -> `HA Coordinator/Hub` -> `Fire Event / Update Diagnostic Sensor`
+- **Incoming:** `Serial Port` -> `pyserial-asyncio Reader` -> `edisio_api (Decoder)` -> `HA Coordinator/Hub Callback` -> `Main Loop scheduling (call_soon_threadsafe)` -> `Check if configured (Options) -> If configured: Fire Event / Update Diagnostic Sensor; If new: Trigger Discovery Flow`
 - **Outgoing (Future Proofing):** `HA UI` -> `HA Coordinator/Hub` -> `edisio_api (Encoder)` -> `pyserial-asyncio Writer` -> `Serial Port`
 
 ## Error Handling
