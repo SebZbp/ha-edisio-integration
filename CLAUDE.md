@@ -75,3 +75,17 @@ _Add a brief overview of your project architecture_
 ## Conventions & Patterns
 
 _Add your project-specific conventions here_
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked with beads (`bd`); specs are saved in `docs/specs/`; `bd sync` runs automatically before every ticket state change. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical roles are beads labels combined with native statuses. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context. See `docs/agents/domain.md`.
