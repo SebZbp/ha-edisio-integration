@@ -2,17 +2,18 @@
 
 A native, strictly typed Home Assistant integration to manage the Edisio RF protocol via a USB serial dongle (e.g. FTDI or Prolific chipsets).
 
-This integration is explicitly designed to replace legacy implementations (like the RFPlayer integration) by offering direct, latency-free communication with your Edisio switch bases, particularly focusing on the **EBP8-B 8-button switch**.
+This integration is explicitly designed to replace legacy implementations (like the RFPlayer integration) by offering direct, latency-free communication with your Edisio switch bases, particularly focusing on the **EBP8 8-button switch base** (EBP8-W white and EBP8-B black are identical apart from the colour).
 
 ## Hardware Requirements
 
 To use this integration, you **must** have the official **Edisio USB PC Dongle (868 MHz)** plugged into your Home Assistant server.
-The dongle is built using standard FTDI (FT232R) or Prolific (PL2303) USB-to-Serial chipsets, which are automatically discovered by Home Assistant.
+The dongle is built on a Prolific (PL2303, `067b:2303`) USB-to-Serial chipset, which Home Assistant discovers automatically. FTDI (FT232R) chips are deliberately not matched, because the RFPlayer dongle uses one; if your dongle is a different chip, add it manually by serial port.
 
 ## Features
 
 - **Direct USB Communication:** Parses the 433/868 MHz raw RF frames natively within Home Assistant.
-- **Short & Long Press Support:** Distinguishes between standard clicks and long presses (dimming) directly from the RF frames.
+- **Short & Long Press Support:** Distinguishes between standard clicks and long presses directly from the RF frames. One physical press fires exactly one event: a short press one `short_press`, a hold one `long_press` (no repeats while held).
+- **Device management:** Add, edit and remove Devices from the integration's options, without waiting for a discovery card.
 - **Battery Diagnostics:** Automatically creates battery sensors for discovered Edisio switches, keeping track of power levels dynamically.
 
 ## Installation
@@ -41,20 +42,30 @@ Once installed and Home Assistant has restarted:
 3. If your Edisio USB dongle is plugged in, Home Assistant should automatically discover it. Otherwise, manually enter your serial port (e.g., `/dev/ttyUSB0`).
 4. Click submit to create the **Edisio Dongle** device.
 
+The serial port is stored as its stable `/dev/serial/by-id/...` path when one exists, so it survives reboots and other USB serial devices being plugged in. Entries created by earlier versions are converted automatically on upgrade; this cannot be undone by downgrading.
+
 ## Device Discovery & Configuration
 
 Once the Edisio Dongle is configured:
 1. Press any physical button on a new Edisio switch board.
 2. The integration will automatically intercept the RF signal and trigger a discovery flow.
-3. A discovery notification card will appear on the **Devices & Services** integrations dashboard: **Edisio Device `<device_id>` Discovered**.
-4. Click **Configure** on the discovery card.
-5. You will be prompted to select the Device's Button layout (shown as Config 1 to Config 5 in the setup form):
+3. A discovery notification card will appear on the **Devices & Services** integrations dashboard: **Edisio Device `<Radio ID>` Discovered**.
+4. Click **Configure** on the discovery card. It shows the Radio ID and the Button number that was pressed.
+5. Select the Device's Button layout (number of active Buttons, 1 to 5), and optionally give it a name (default `Edisio EBP8-B <Radio ID>`) and an area:
    * **1 Button:** Button number 05
    * **2 Buttons:** Button numbers 04 & 06
    * **3 Buttons:** Button numbers 02, 07 & 08
    * **4 Buttons:** Button numbers 01, 03, 07 & 08
    * **5 Buttons:** Button numbers 01, 03, 05, 07 & 08
 6. Click submit. The device is created and nested under the parent **Edisio Dongle** device, generating a battery sensor and one button sensor per Button number (e.g. `Button 01`, `Button 03`, `Button 05`, `Button 07`, `Button 08` for the 5-Button layout).
+
+## Managing Devices
+
+Open **Settings** -> **Devices & Services** -> **Edisio** -> **Configure** to manage Devices:
+
+- **Add a Device:** enter its Radio ID (8 hex digits, e.g. `0670A248`) without pressing it, then choose the Button layout and optionally a name and area.
+- **Edit a Device:** change its name, Button layout or area. Button sensors for Button numbers no longer in the layout are removed and the others are kept. Tick *Also update entity IDs to match the name* to rename entity IDs too (off by default, so dashboards and scripts keep working). Changing the name replaces any name set on the Home Assistant device page.
+- **Remove a Device:** forgets the Device and deletes its sensors. If it is pressed again, a new discovery card is offered.
 
 ## Button Sensor States
 
@@ -102,7 +113,7 @@ To make migration from the old `RFPlayer` integration painless, we've included a
 ### Using the Blueprint
 1. Copy the blueprint from `blueprints/automation/edisio/ebp8b_controller.yaml` to your Home Assistant `blueprints/automation/edisio/` folder (or import it).
 2. Go to **Settings** -> **Automations & Blueprints** -> **Blueprints**.
-3. Create a new automation from the **Edisio EBP8-B Switch Controller** blueprint.
+3. Create a new automation from the **Edisio EBP8-B Switch Controller** blueprint (it works with EBP8-W and EBP8-B bases).
 4. Pick your Device from the list of Edisio Devices (e.g. "BP Cuisine"); the Dongle is not offered. The blueprint reads its Radio ID from the Device, so there is nothing to type.
 5. Open the section for each Button number your Device has and drop in the actions you want for short and long presses. Leave the other Buttons empty.
 
@@ -119,6 +130,9 @@ A Device sends Button numbers `01` to `08`; which ones depends on its Button lay
 | 3 Buttons | `02 07 08` |
 | 4 Buttons | `01 03 07 08` |
 | 5 Buttons | `01 03 05 07 08` |
+
+> [!NOTE]
+> The blueprint now selects Devices whose model is `EBP8` (previously `EBP8-B`). If you imported an earlier copy, re-import it, otherwise your Devices are not offered.
 
 > [!NOTE]
 > Automations created from the earlier version of the blueprint (inputs `button_1_*` to `button_5_*` and a typed Device ID) are not migrated. Recreate them from the new blueprint.
