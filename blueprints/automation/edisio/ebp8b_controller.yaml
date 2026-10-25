@@ -1,116 +1,236 @@
 blueprint:
   name: Edisio EBP8-B Switch Controller
-  description: Create automations for the Edisio EBP8-B switch, easily mapping short and long presses to actions. Use this to migrate away from legacy RFPlayer automations.
+  description: >-
+    Map short and long presses of an Edisio EBP8-B Device to actions, one
+    section per Button number (01 to 08). Which Button numbers a Device sends
+    depends on its Button layout: 1-Button sends 05; 2-Button sends 04 06;
+    3-Button sends 02 07 08; 4-Button sends 01 03 07 08; 5-Button sends
+    01 03 05 07 08. Leave unused Buttons empty.
   domain: automation
+  homeassistant:
+    min_version: 2024.6.0
   input:
-    edisio_device_id:
-      name: Edisio Device ID (e.g. 00000001)
-      description: The hexadecimal ID of the Edisio switch you want to control.
-      default: ""
-    button_1_short:
-      name: Button 1 - Short Press
-      description: Action to run on Button 1 short press
-      default: []
+    edisio_device:
+      name: Edisio Device
+      description: The Edisio Device to control.
       selector:
-        action: {}
-    button_1_long:
-      name: Button 1 - Long Press
-      description: Action to run on Button 1 long press
-      default: []
-      selector:
-        action: {}
-    button_2_short:
-      name: Button 2 - Short Press
-      description: Action to run on Button 2 short press
-      default: []
-      selector:
-        action: {}
-    button_2_long:
-      name: Button 2 - Long Press
-      description: Action to run on Button 2 long press
-      default: []
-      selector:
-        action: {}
-    button_3_short:
-      name: Button 3 - Short Press
-      description: Action to run on Button 3 short press
-      default: []
-      selector:
-        action: {}
-    button_3_long:
-      name: Button 3 - Long Press
-      description: Action to run on Button 3 long press
-      default: []
-      selector:
-        action: {}
-    button_4_short:
-      name: Button 4 - Short Press
-      description: Action to run on Button 4 short press
-      default: []
-      selector:
-        action: {}
-    button_4_long:
-      name: Button 4 - Long Press
-      description: Action to run on Button 4 long press
-      default: []
-      selector:
-        action: {}
-    button_5_short:
-      name: Button 5 - Short Press
-      description: Action to run on Button 5 short press
-      default: []
-      selector:
-        action: {}
-    button_5_long:
-      name: Button 5 - Long Press
-      description: Action to run on Button 5 long press
-      default: []
-      selector:
-        action: {}
+        device:
+          filter:
+            # Edisio Devices only; the Dongle (model "Dongle") is excluded.
+            - integration: edisio
+              model: EBP8-B
+    button_01:
+      name: Button 01
+      description: Present on the 4-Button and 5-Button layouts.
+      collapsed: true
+      input:
+        button_01_short:
+          name: Button 01 - Short Press
+          description: Action to run on Button 01 short press.
+          default: []
+          selector:
+            action: {}
+        button_01_long:
+          name: Button 01 - Long Press
+          description: Action to run on Button 01 long press.
+          default: []
+          selector:
+            action: {}
+    button_02:
+      name: Button 02
+      description: Present on the 3-Button layout.
+      collapsed: true
+      input:
+        button_02_short:
+          name: Button 02 - Short Press
+          description: Action to run on Button 02 short press.
+          default: []
+          selector:
+            action: {}
+        button_02_long:
+          name: Button 02 - Long Press
+          description: Action to run on Button 02 long press.
+          default: []
+          selector:
+            action: {}
+    button_03:
+      name: Button 03
+      description: Present on the 4-Button and 5-Button layouts.
+      collapsed: true
+      input:
+        button_03_short:
+          name: Button 03 - Short Press
+          description: Action to run on Button 03 short press.
+          default: []
+          selector:
+            action: {}
+        button_03_long:
+          name: Button 03 - Long Press
+          description: Action to run on Button 03 long press.
+          default: []
+          selector:
+            action: {}
+    button_04:
+      name: Button 04
+      description: Present on the 2-Button layout.
+      collapsed: true
+      input:
+        button_04_short:
+          name: Button 04 - Short Press
+          description: Action to run on Button 04 short press.
+          default: []
+          selector:
+            action: {}
+        button_04_long:
+          name: Button 04 - Long Press
+          description: Action to run on Button 04 long press.
+          default: []
+          selector:
+            action: {}
+    button_05:
+      name: Button 05
+      description: Present on the 1-Button and 5-Button layouts.
+      collapsed: true
+      input:
+        button_05_short:
+          name: Button 05 - Short Press
+          description: Action to run on Button 05 short press.
+          default: []
+          selector:
+            action: {}
+        button_05_long:
+          name: Button 05 - Long Press
+          description: Action to run on Button 05 long press.
+          default: []
+          selector:
+            action: {}
+    button_06:
+      name: Button 06
+      description: Present on the 2-Button layout.
+      collapsed: true
+      input:
+        button_06_short:
+          name: Button 06 - Short Press
+          description: Action to run on Button 06 short press.
+          default: []
+          selector:
+            action: {}
+        button_06_long:
+          name: Button 06 - Long Press
+          description: Action to run on Button 06 long press.
+          default: []
+          selector:
+            action: {}
+    button_07:
+      name: Button 07
+      description: Present on the 3-Button, 4-Button and 5-Button layouts.
+      collapsed: true
+      input:
+        button_07_short:
+          name: Button 07 - Short Press
+          description: Action to run on Button 07 short press.
+          default: []
+          selector:
+            action: {}
+        button_07_long:
+          name: Button 07 - Long Press
+          description: Action to run on Button 07 long press.
+          default: []
+          selector:
+            action: {}
+    button_08:
+      name: Button 08
+      description: Present on the 3-Button, 4-Button and 5-Button layouts.
+      collapsed: true
+      input:
+        button_08_short:
+          name: Button 08 - Short Press
+          description: Action to run on Button 08 short press.
+          default: []
+          selector:
+            action: {}
+        button_08_long:
+          name: Button 08 - Long Press
+          description: Action to run on Button 08 long press.
+          default: []
+          selector:
+            action: {}
+
+mode: queued
+
+variables:
+  edisio_device: !input edisio_device
+  # Radio ID = second element of the device's (edisio, <Radio ID>) identifier.
+  radio_id: >-
+    {{ device_attr(edisio_device, 'identifiers')
+       | default([], true)
+       | selectattr(0, 'eq', 'edisio') | map(attribute=1) | first | default('') }}
 
 trigger:
   - platform: event
     event_type: edisio_button_event
-    event_data:
-      device_id: !input edisio_device_id
+
+condition:
+  - "{{ radio_id != '' and trigger.event.data.device_id == radio_id }}"
 
 action:
   - variables:
       button: "{{ trigger.event.data.button }}"
       press_type: "{{ trigger.event.data.type }}"
   - choose:
-      # Button 1
+      # Button 01
       - conditions:
           - "{{ button == '01' and press_type == 'short_press' }}"
-        sequence: !input button_1_short
+        sequence: !input button_01_short
       - conditions:
           - "{{ button == '01' and press_type == 'long_press' }}"
-        sequence: !input button_1_long
-      # Button 2
+        sequence: !input button_01_long
+      # Button 02
       - conditions:
           - "{{ button == '02' and press_type == 'short_press' }}"
-        sequence: !input button_2_short
+        sequence: !input button_02_short
       - conditions:
           - "{{ button == '02' and press_type == 'long_press' }}"
-        sequence: !input button_2_long
-      # Button 3
+        sequence: !input button_02_long
+      # Button 03
       - conditions:
           - "{{ button == '03' and press_type == 'short_press' }}"
-        sequence: !input button_3_short
+        sequence: !input button_03_short
       - conditions:
           - "{{ button == '03' and press_type == 'long_press' }}"
-        sequence: !input button_3_long
-      # Button 4
+        sequence: !input button_03_long
+      # Button 04
       - conditions:
           - "{{ button == '04' and press_type == 'short_press' }}"
-        sequence: !input button_4_short
+        sequence: !input button_04_short
       - conditions:
           - "{{ button == '04' and press_type == 'long_press' }}"
-        sequence: !input button_4_long
-      # Button 5
+        sequence: !input button_04_long
+      # Button 05
       - conditions:
           - "{{ button == '05' and press_type == 'short_press' }}"
-        sequence: !input button_5_short
+        sequence: !input button_05_short
       - conditions:
           - "{{ button == '05' and press_type == 'long_press' }}"
-        sequence: !input button_5_long
+        sequence: !input button_05_long
+      # Button 06
+      - conditions:
+          - "{{ button == '06' and press_type == 'short_press' }}"
+        sequence: !input button_06_short
+      - conditions:
+          - "{{ button == '06' and press_type == 'long_press' }}"
+        sequence: !input button_06_long
+      # Button 07
+      - conditions:
+          - "{{ button == '07' and press_type == 'short_press' }}"
+        sequence: !input button_07_short
+      - conditions:
+          - "{{ button == '07' and press_type == 'long_press' }}"
+        sequence: !input button_07_long
+      # Button 08
+      - conditions:
+          - "{{ button == '08' and press_type == 'short_press' }}"
+        sequence: !input button_08_short
+      - conditions:
+          - "{{ button == '08' and press_type == 'long_press' }}"
+        sequence: !input button_08_long

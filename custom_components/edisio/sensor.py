@@ -1,5 +1,5 @@
 import asyncio
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List, Optional
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -17,17 +17,11 @@ async def async_setup_entry(
     @callback
     def async_discover_device(data: Dict[str, Any]) -> None:
         device_id: str = data.get("id", "")
-        entities = []
-        entities.append(EdisioBatterySensor(device_id, config_entry.entry_id))
-        
-        configured_devices = config_entry.options.get("devices", {})
-        device_cfg = configured_devices.get(device_id, {})
-        active_buttons_cfg = device_cfg.get("active_buttons", DEFAULT_ACTIVE_BUTTONS)
-        button_ids = BUTTON_CONFIGS.get(active_buttons_cfg, [])
-        for index, button_id in enumerate(button_ids):
-            entities.append(EdisioButtonSensor(device_id, button_id, index + 1, config_entry.entry_id))
-            
-        async_add_entities(entities, update_before_add=False)
+        device_cfg = config_entry.options.get("devices", {}).get(device_id, {})
+        async_add_entities(
+            _device_sensors(device_id, device_cfg, config_entry.entry_id),
+            update_before_add=False,
+        )
 
     config_entry.async_on_unload(
         async_dispatcher_connect(hass, f"{DOMAIN}_discover", async_discover_device)
@@ -38,16 +32,17 @@ async def async_setup_entry(
     for device_id, device_cfg in configured_devices.items():
         if device_id not in hass.data[DOMAIN][config_entry.entry_id]["devices"]:
             hass.data[DOMAIN][config_entry.entry_id]["devices"].add(device_id)
-            
-        entities = []
-        entities.append(EdisioBatterySensor(device_id, config_entry.entry_id))
-        
-        active_buttons_cfg = device_cfg.get("active_buttons", DEFAULT_ACTIVE_BUTTONS)
-        button_ids = BUTTON_CONFIGS.get(active_buttons_cfg, [])
-        for index, button_id in enumerate(button_ids):
-            entities.append(EdisioButtonSensor(device_id, button_id, index + 1, config_entry.entry_id))
-            
-        async_add_entities(entities)
+
+        async_add_entities(_device_sensors(device_id, device_cfg, config_entry.entry_id))
+
+
+def _device_sensors(device_id: str, device_cfg: Dict[str, Any], entry_id: str) -> List[SensorEntity]:
+    """The Battery sensor plus one Button sensor per Button number of the Device's Button layout."""
+    active_buttons_cfg = device_cfg.get("active_buttons", DEFAULT_ACTIVE_BUTTONS)
+    return [EdisioBatterySensor(device_id, entry_id)] + [
+        EdisioButtonSensor(device_id, button_number, entry_id)
+        for button_number in BUTTON_CONFIGS.get(active_buttons_cfg, [])
+    ]
 
 class EdisioBatterySensor(SensorEntity):
     _attr_has_entity_name: bool = True
@@ -93,12 +88,12 @@ class EdisioBatterySensor(SensorEntity):
 class EdisioButtonSensor(SensorEntity):
     _attr_has_entity_name: bool = True
 
-    def __init__(self, device_id: str, button_id: str, button_index: int, entry_id: str) -> None:
+    def __init__(self, device_id: str, button_number: str, entry_id: str) -> None:
         self._device_id: str = device_id
-        self._button_id: str = button_id
+        self._button_number: str = button_number
         self._entry_id: str = entry_id
-        self._attr_unique_id: str = f"{device_id}_button_{button_id}"
-        self._attr_name: str = f"Button {button_index}"
+        self._attr_unique_id: str = f"{device_id}_button_{button_number}"
+        self._attr_name: str = f"Button {button_number}"
         self._attr_native_value: str = "normal"
         self._reset_task: Optional[asyncio.Task] = None
 
@@ -123,7 +118,7 @@ class EdisioButtonSensor(SensorEntity):
 
     @callback
     def _update_button(self, data: Dict[str, Any]) -> None:
-        if data.get("button") != self._button_id:
+        if data.get("button") != self._button_number:
             return
 
         action = data.get("action", "")
