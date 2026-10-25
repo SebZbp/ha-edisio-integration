@@ -14,7 +14,7 @@ from .const import (
     CONF_RADIO_ID,
     DEFAULT_ACTIVE_BUTTONS,
 )
-from .device import apply_area
+from .device import apply_area, build_device_cfg
 
 _RADIO_ID = re.compile(r"[0-9A-F]{8}")
 
@@ -30,12 +30,7 @@ class AddDeviceSteps:
             elif radio_id in devices:
                 errors[CONF_RADIO_ID] = "already_configured"
             else:
-                device_cfg = {
-                    CONF_ACTIVE_BUTTONS: user_input.get(CONF_ACTIVE_BUTTONS, DEFAULT_ACTIVE_BUTTONS)
-                }
-                name = (user_input.get(CONF_NAME) or "").strip()
-                if name:
-                    device_cfg[CONF_NAME] = name
+                device_cfg = build_device_cfg(user_input)
                 devices[radio_id] = device_cfg
                 area_id = user_input.get(CONF_AREA_ID)
                 if area_id:

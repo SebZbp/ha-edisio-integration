@@ -6,9 +6,11 @@ Steps:
                            (name, area, entity IDs, Button layout): add a field in ``_edit_schema``
                            and handle it in ``_apply_edit``.
 """
-from typing import Any, Dict, List, Optional
+import logging
+from typing import Any, Dict, List, Optional, Tuple
 
 import voluptuous as vol
+from homeassistant.components import persistent_notification
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
@@ -24,55 +26,58 @@ from .const import (
     DEFAULT_ACTIVE_BUTTONS,
     DOMAIN,
 )
-from .device import device_name
+from .device import build_device_cfg, device_name, device_picker_schema
+
+_LOGGER = logging.getLogger(__name__)
 
 CONF_UPDATE_ENTITY_IDS = "update_entity_ids"
 
 
 class EditDeviceSteps:
     _edit_radio_id: str
-    _edited_cfg: Dict[str, Any]
 
     async def async_step_edit_device(self, user_input: Optional[Dict[str, Any]] = None) -> FlowResult:
         devices: Dict[str, Dict[str, Any]] = self.config_entry.options.get("devices", {})
         if not devices:
             return self.async_abort(reason="no_devices")
-        if user_input is not None and user_input.get(CONF_RADIO_ID) in devices:
+        if user_input is not None:
+            if user_input.get(CONF_RADIO_ID) not in devices:
+                return self.async_abort(reason="unknown_device")
             self._edit_radio_id = user_input[CONF_RADIO_ID]
             return await self.async_step_edit_device_settings()
         return self.async_show_form(
-            step_id="edit_device",
-            data_schema=vol.Schema({
-                vol.Required(CONF_RADIO_ID): selector.SelectSelector(
-                    selector.SelectSelectorConfig(options=[
-                        {"value": rid, "label": f"{device_name(rid, cfg)} ({rid})"}
-                        for rid, cfg in devices.items()
-                    ])
-                ),
-            }),
+            step_id="edit_device", data_schema=device_picker_schema(devices)
         )
 
     async def async_step_edit_device_settings(
         self, user_input: Optional[Dict[str, Any]] = None
     ) -> FlowResult:
         radio_id = self._edit_radio_id
+        # The Device may have been removed since it was picked (e.g. from another session).
+        if radio_id not in self.config_entry.options.get("devices", {}):
+            return self.async_abort(reason="unknown_device")
         if user_input is None:
             return self.async_show_form(
                 step_id="edit_device_settings",
                 data_schema=self._edit_schema(radio_id),
                 description_placeholders={"radio_id": radio_id},
             )
-        skipped = self._apply_edit(radio_id, user_input)
-        devices = dict(self.config_entry.options.get("devices", {}))
-        devices[radio_id] = self._edited_cfg
+        new_cfg, skipped = self._apply_edit(radio_id, user_input)
         if skipped:
-            new_options = dict(self.config_entry.options)
-            new_options["devices"] = devices
-            self.hass.config_entries.async_update_entry(self.config_entry, options=new_options)
-            return self.async_abort(
-                reason="entity_ids_skipped",
-                description_placeholders={"skipped": ", ".join(skipped)},
+            # Reported, not overwritten; the edit itself succeeded, so it is not an abort.
+            message = (
+                f"Edisio Device {radio_id} was saved, but these entity IDs were not changed "
+                f"because another entity already uses them: {', '.join(skipped)}"
             )
+            _LOGGER.warning(message)
+            persistent_notification.async_create(
+                self.hass,
+                message,
+                title="Edisio: entity IDs not changed",
+                notification_id=f"{DOMAIN}_entity_ids_skipped_{radio_id}",
+            )
+        devices = dict(self.config_entry.options["devices"])
+        devices[radio_id] = new_cfg
         return self._save_devices(devices)
 
     def _edit_schema(self, radio_id: str) -> vol.Schema:
@@ -93,22 +98,17 @@ class EditDeviceSteps:
     def _registry_device(self, radio_id: str):
         return dr.async_get(self.hass).async_get_device(identifiers={(DOMAIN, radio_id)})
 
-    def _apply_edit(self, radio_id: str, user_input: Dict[str, Any]) -> List[str]:
-        """Apply the submitted form: registry changes now, new stored config in ``_edited_cfg``.
+    def _apply_edit(
+        self, radio_id: str, user_input: Dict[str, Any]
+    ) -> Tuple[Dict[str, Any], List[str]]:
+        """Apply the submitted form: registry changes now; returns the new stored config.
 
-        Returns the entity IDs that could not be set because another entity holds them.
+        Also returns the entity IDs that could not be set because another entity holds them.
+        The caller has already checked that the Device is configured, so nothing here fails
+        before the first registry change.
         """
-        cfg = dict(self.config_entry.options["devices"][radio_id])
-        name = (user_input.get(CONF_NAME) or "").strip()
-        if name:
-            cfg[CONF_NAME] = name
-        else:
-            cfg.pop(CONF_NAME, None)
-        old_layout = cfg.get(CONF_ACTIVE_BUTTONS, DEFAULT_ACTIVE_BUTTONS)
-        new_layout = user_input.get(CONF_ACTIVE_BUTTONS, old_layout)
-        cfg[CONF_ACTIVE_BUTTONS] = new_layout
-        self._edited_cfg = cfg
-        self._remove_dropped_buttons(radio_id, new_layout)
+        cfg = build_device_cfg(user_input, self.config_entry.options["devices"][radio_id])
+        self._remove_dropped_buttons(radio_id, cfg[CONF_ACTIVE_BUTTONS])
 
         device = self._registry_device(radio_id)
         if device is not None:
@@ -116,11 +116,13 @@ class EditDeviceSteps:
                 device.id,
                 name=device_name(radio_id, cfg),
                 name_by_user=None,
+                # The submitted value is written: an empty/missing area clears the area.
                 area_id=user_input.get(CONF_AREA_ID) or None,
             )
+        skipped: List[str] = []
         if user_input.get(CONF_UPDATE_ENTITY_IDS):
-            return self._update_entity_ids(radio_id, device_name(radio_id, cfg))
-        return []
+            skipped = self._update_entity_ids(radio_id, device_name(radio_id, cfg))
+        return cfg, skipped
 
     def _remove_dropped_buttons(self, radio_id: str, layout: int) -> None:
         """Remove Button sensors whose Button number is not in ``layout``; others are untouched.

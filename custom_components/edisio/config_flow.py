@@ -9,7 +9,7 @@ from homeassistant.components import usb
 from homeassistant.helpers import selector
 
 from .const import DOMAIN, CONF_SERIAL_PORT, CONF_ACTIVE_BUTTONS, DEFAULT_ACTIVE_BUTTONS, CONF_NAME, CONF_AREA_ID
-from .device import apply_area
+from .device import apply_area, build_device_cfg
 from .options_flow import EdisioOptionsFlow
 
 _LOGGER = logging.getLogger(__name__)
@@ -88,10 +88,7 @@ class EdisioConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if entries:
                 entry = entries[0]
                 devices = dict(entry.options.get("devices", {}))
-                device_cfg = {CONF_ACTIVE_BUTTONS: user_input[CONF_ACTIVE_BUTTONS]}
-                name = (user_input.get(CONF_NAME) or "").strip()
-                if name:
-                    device_cfg[CONF_NAME] = name
+                device_cfg = build_device_cfg(user_input)
                 devices[self._device_id] = device_cfg
                 # The area is applied once, when the registry entry is created; it is not stored.
                 area_id = user_input.get(CONF_AREA_ID)

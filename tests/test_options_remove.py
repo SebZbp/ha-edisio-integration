@@ -105,3 +105,17 @@ async def test_packet_from_removed_device_starts_discovery_flow(hass, entry):
         if f["context"].get("device_id") == "06708E57"
     ]
     assert len(flows) == 1
+
+
+async def test_remove_of_device_removed_meanwhile_aborts_without_saving(hass, entry):
+    form = await _open_remove_form(hass, entry)
+    hass.config_entries.async_update_entry(
+        entry, options={"devices": {"0670A248": {"active_buttons": 5}}}
+    )
+    before = dict(entry.options["devices"])
+    result = await hass.config_entries.options.async_configure(
+        form["flow_id"], {"radio_id": "06708E57"}
+    )
+    assert result["type"] == data_entry_flow.FlowResultType.ABORT
+    assert result["reason"] == "unknown_device"
+    assert entry.options["devices"] == before

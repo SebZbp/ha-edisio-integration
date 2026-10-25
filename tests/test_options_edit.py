@@ -1,6 +1,7 @@
 """Options flow, Edit a Device: name, entity IDs and area (edisio-zmz.2)."""
 import pytest
 from homeassistant import data_entry_flow
+from homeassistant.components import persistent_notification
 from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
@@ -126,7 +127,9 @@ async def test_checkbox_rewrites_entity_ids_and_keeps_unique_ids(hass, entry, se
     assert ids["0670A248_battery"] != "sensor.bp_salon_battery"
 
 
-async def test_taken_entity_id_is_skipped_and_reported(hass, entry, set_up_sensor_platform):
+async def test_taken_entity_id_is_skipped_and_reported(
+    hass, entry, set_up_sensor_platform, caplog
+):
     await set_up_sensor_platform(entry)
     reg = er.async_get(hass)
     reg.async_get_or_create("sensor", "other", "other-1", suggested_object_id="bp_salon_battery")
@@ -135,7 +138,39 @@ async def test_taken_entity_id_is_skipped_and_reported(hass, entry, set_up_senso
     assert ids["other-1"] == "sensor.bp_salon_battery"
     assert ids[f"{RADIO_ID}_battery"] != "sensor.bp_salon_battery"
     assert ids[f"{RADIO_ID}_button_02"] == "sensor.bp_salon_button_02"
-    assert result["type"] == data_entry_flow.FlowResultType.ABORT
-    assert result["reason"] == "entity_ids_skipped"
-    assert "sensor.bp_salon_battery" in result["description_placeholders"]["skipped"]
+    # Saved like any other edit (not an abort); the skipped IDs are reported, not overwritten.
+    assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
     assert entry.options["devices"][RADIO_ID]["name"] == "BP Salon"
+    assert any("sensor.bp_salon_battery" in r.getMessage() for r in caplog.records)
+    notifications = persistent_notification._async_get_or_create_notifications(hass)
+    assert any(
+        "sensor.bp_salon_battery" in n["message"] for n in notifications.values()
+    )
+
+
+async def test_edit_of_device_removed_meanwhile_aborts(hass, entry):
+    form = await _pick(hass, entry)
+    hass.config_entries.async_update_entry(
+        entry, options={"devices": {"0670A248": {"active_buttons": 5}}}
+    )
+    result = await hass.config_entries.options.async_configure(
+        form["flow_id"], {"active_buttons": 5, "name": "Ghost"}
+    )
+    assert result["type"] == data_entry_flow.FlowResultType.ABORT
+    assert result["reason"] == "unknown_device"
+    assert set(entry.options["devices"]) == {"0670A248"}
+
+
+async def test_pick_of_device_removed_meanwhile_aborts(hass, entry):
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "edit_device"}
+    )
+    hass.config_entries.async_update_entry(
+        entry, options={"devices": {"0670A248": {"active_buttons": 5}}}
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"radio_id": RADIO_ID}
+    )
+    assert result["type"] == data_entry_flow.FlowResultType.ABORT
+    assert result["reason"] == "unknown_device"
