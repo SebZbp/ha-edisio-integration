@@ -22,7 +22,7 @@ The blueprint has one short-press and one long-press action per Button number `0
 
 ## Implementation Decisions
 
-- Inputs: for each Button number `01`–`08`, an input section "Button <n>" (collapsed by default) holding `button_<n>_short` and `button_<n>_long` action selectors, default empty. Section descriptions list the layouts that contain the Button (from `BUTTON_CONFIGS`).
+- Inputs: for each Button number `01`–`08`, an input section "Button <n>" (collapsed by default) holding `button_<n>_short` and `button_<n>_long` action selectors, default empty. Section descriptions list the layouts that contain the Button (from `BUTTON_LAYOUTS`).
 - Device input: device selector with `integration: edisio`. The Radio ID is the second element of the device's `(edisio, <Radio ID>)` identifier, read with a template. Because trigger `event_data` cannot use a full template, the trigger listens to all `edisio_button_event` events and a condition compares `trigger.event.data.device_id` to the derived Radio ID.
 - Actions: a `choose` with one branch per Button number and press type, comparing `button` to the two-digit Button number and `type` to `short_press` / `long_press`.
 - The blueprint requires an HA version that supports blueprint input sections; the `homeassistant: min_version` key is set accordingly.
@@ -33,7 +33,7 @@ The blueprint has one short-press and one long-press action per Button number `0
 
 ## Testing Decisions
 
-- The blueprint is YAML, not Python: a test loads it, checks it parses with HA's blueprint schema, and asserts that the set of Button numbers it handles equals the union of all Button numbers in `BUTTON_CONFIGS`, so the blueprint and the layouts cannot drift apart again.
+- The blueprint is YAML, not Python: a test loads it, checks it parses with HA's blueprint schema, and asserts that the set of Button numbers it handles equals the union of all Button numbers in `BUTTON_LAYOUTS`, so the blueprint and the layouts cannot drift apart again.
 - Manual check on the live installation: create an automation from the blueprint for BP Bas escalier (`06709603`), bind a notification to Button `07` short press, press it, see the notification.
 - Prior art: none for blueprints; test style as in `tests/`.
 

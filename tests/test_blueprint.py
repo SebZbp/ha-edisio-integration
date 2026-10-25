@@ -12,14 +12,14 @@ from homeassistant.helpers.template import Template
 from homeassistant.util.yaml import load_yaml
 
 from custom_components.edisio import async_setup_entry
-from custom_components.edisio.const import BUTTON_CONFIGS, DOMAIN
+from custom_components.edisio.const import BUTTON_LAYOUTS, DOMAIN
 
 BLUEPRINT_PATH = (
     Path(__file__).parent.parent / "blueprints" / "automation" / "edisio" / "ebp8b_controller.yaml"
 )
 
 # Every Button number some Button layout can send.
-BUTTON_NUMBERS = set().union(*BUTTON_CONFIGS.values())
+BUTTON_NUMBERS = set().union(*BUTTON_LAYOUTS.values())
 
 
 @pytest.fixture
@@ -69,7 +69,7 @@ def test_section_descriptions_name_the_layouts_containing_the_button(blueprint):
     inputs = blueprint.data["blueprint"]["input"]
     for number in sorted(BUTTON_NUMBERS):
         description = inputs[f"button_{number}"]["description"]
-        for layout, numbers in BUTTON_CONFIGS.items():
+        for layout, numbers in BUTTON_LAYOUTS.items():
             mentioned = f"{layout}-Button" in description
             assert mentioned == (number in numbers), (number, layout, description)
 

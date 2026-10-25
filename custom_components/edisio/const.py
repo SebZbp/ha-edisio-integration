@@ -6,7 +6,7 @@ CONF_AREA_ID = "area_id"
 CONF_RADIO_ID = "radio_id"
 DEFAULT_ACTIVE_BUTTONS = 5
 
-BUTTON_CONFIGS = {
+BUTTON_LAYOUTS = {
     1: ["05"],
     2: ["04", "06"],
     3: ["02", "07", "08"],

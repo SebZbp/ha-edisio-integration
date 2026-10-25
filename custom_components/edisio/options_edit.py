@@ -18,7 +18,7 @@ from homeassistant.helpers import selector
 from homeassistant.util import slugify
 
 from .const import (
-    BUTTON_CONFIGS,
+    BUTTON_LAYOUTS,
     CONF_ACTIVE_BUTTONS,
     CONF_AREA_ID,
     CONF_NAME,
@@ -130,7 +130,7 @@ class EditDeviceSteps:
         Entities for new Button numbers are created by the entry reload.
         """
         registry = er.async_get(self.hass)
-        kept = {f"{radio_id}_button_{n}" for n in BUTTON_CONFIGS.get(layout, [])}
+        kept = {f"{radio_id}_button_{n}" for n in BUTTON_LAYOUTS.get(layout, [])}
         prefix = f"{radio_id}_button_"
         for entity in er.async_entries_for_config_entry(registry, self.config_entry.entry_id):
             if (entity.unique_id or "").startswith(prefix) and entity.unique_id not in kept:
