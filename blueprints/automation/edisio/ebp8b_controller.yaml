@@ -20,7 +20,7 @@ blueprint:
           filter:
             # Edisio Devices only; the Dongle (model "Dongle") is excluded.
             - integration: edisio
-              model: EBP8-B
+              model: EBP8
     button_01:
       name: Button 01
       description: Present on the 4-Button and 5-Button layouts.

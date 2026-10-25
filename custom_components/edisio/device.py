@@ -19,7 +19,7 @@ def device_info(device_id: str, device_cfg: Dict[str, Any], entry_id: str) -> Di
         "identifiers": {(DOMAIN, device_id)},
         "name": device_name(device_id, device_cfg),
         "manufacturer": "Edisio",
-        "model": "EBP8-B",
+        "model": "EBP8",
         "via_device": (DOMAIN, entry_id),
     }
 
