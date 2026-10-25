@@ -121,5 +121,38 @@ async def test_init_triggers_discovery_for_unconfigured_device():
         hass.config_entries.flow.async_init.assert_called_once_with(
             DOMAIN,
             context={"source": "device", "device_id": "02"},
-            data={"device_id": "02"}
+            data={"device_id": "02", "button": "01"}
         )
+
+
+@pytest.mark.asyncio
+async def test_init_second_press_while_flow_in_progress_starts_no_flow():
+    hass = MagicMock(spec=HomeAssistant)
+    hass.data = {}
+    hass.bus = MagicMock()
+    hass.config_entries = MagicMock()
+    hass.config_entries.async_forward_entry_setups = AsyncMock()
+    hass.config_entries.flow = MagicMock()
+    hass.config_entries.flow.async_progress = MagicMock(return_value=[
+        {"handler": DOMAIN, "context": {"device_id": "02"}}
+    ])
+    hass.config_entries.flow.async_init = MagicMock()
+    hass.loop = MagicMock()
+    hass.loop.call_soon_threadsafe = lambda func, *args: func(*args)
+
+    entry = MagicMock(spec=ConfigEntry)
+    entry.data = {"serial_port": "/dev/ttyUSB0"}
+    entry.options = {}
+    entry.entry_id = "test_entry"
+
+    with patch("custom_components.edisio.EdisioHub") as mock_hub_class, \
+         patch("homeassistant.helpers.device_registry.async_get"):
+        mock_hub_instance = MagicMock()
+        mock_hub_instance.connect = AsyncMock()
+        mock_hub_class.return_value = mock_hub_instance
+
+        await async_setup_entry(hass, entry)
+        callback = mock_hub_instance.register_callback.call_args[0][0]
+        callback({"id": "02", "button": "03", "action": "toggle"})
+
+        hass.config_entries.flow.async_init.assert_not_called()

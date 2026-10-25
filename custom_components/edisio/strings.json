@@ -17,7 +17,7 @@
       },
       "device_confirm": {
         "title": "Configure Edisio Device {device_id}",
-        "description": "Please enter the number of active buttons on the EBP8-B switch board.",
+        "description": "Button {button} was pressed on Device {device_id}. Please enter the number of active buttons on the EBP8-B switch board.",
         "data": {
           "active_buttons": "Number of active buttons (1-5)"
         }

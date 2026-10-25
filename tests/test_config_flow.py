@@ -16,12 +16,16 @@ async def test_config_flow_device_steps():
     flow._abort_if_unique_id_configured = MagicMock()
     
     # 1. Test async_step_device
-    result = await flow.async_step_device({"device_id": "01234567"})
+    result = await flow.async_step_device({"device_id": "01234567", "button": "05"})
     
     flow.async_set_unique_id.assert_called_once_with("edisio_01234567")
     flow._abort_if_unique_id_configured.assert_called_once()
     assert result["type"] == "form"
     assert result["step_id"] == "device_confirm"
+    assert result["description_placeholders"] == {
+        "device_id": "01234567",
+        "button": "05",
+    }
 
     # 2. Test async_step_device_confirm submitting form
     mock_entry = MagicMock()

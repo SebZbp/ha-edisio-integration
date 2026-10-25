@@ -67,6 +67,7 @@ class EdisioConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_device(self, discovery_info: Dict[str, Any]) -> FlowResult:
         self._device_id = discovery_info["device_id"]
+        self._button = discovery_info.get("button", "")
         await self.async_set_unique_id(f"edisio_{self._device_id}")
         self._abort_if_unique_id_configured()
         return await self.async_step_device_confirm()
@@ -97,5 +98,8 @@ class EdisioConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Coerce(int), vol.Range(min=1, max=5)
                 )
             }),
-            description_placeholders={"device_id": self._device_id}
+            description_placeholders={
+                "device_id": self._device_id,
+                "button": self._button,
+            }
         )
