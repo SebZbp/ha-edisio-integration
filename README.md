@@ -49,16 +49,21 @@ Once the Edisio Dongle is configured:
 3. A discovery notification card will appear on the **Devices & Services** integrations dashboard: **Edisio Device `<device_id>` Discovered**.
 4. Click **Configure** on the discovery card.
 5. You will be prompted to select the number of active buttons on your switch board (Config 1 to Config 5):
-   * **Config 1:** 1 button (Button 5 is active)
-   * **Config 2:** 2 buttons (Buttons 4 & 6 are active)
-   * **Config 3:** 3 buttons (Buttons 2, 7 & 8 are active)
-   * **Config 4:** 4 buttons (Buttons 1, 3, 7 & 8 are active)
-   * **Config 5:** 5 buttons (Buttons 1, 3, 5, 7 & 8 are active)
-6. Click submit. The device is created and nested under the parent **Edisio Dongle** device, generating a battery sensor and sequential button sensors (`Button 1`, `Button 2`, etc.).
+   * **Config 1:** 1 button (Button number 05)
+   * **Config 2:** 2 buttons (Button numbers 04 & 06)
+   * **Config 3:** 3 buttons (Button numbers 02, 07 & 08)
+   * **Config 4:** 4 buttons (Button numbers 01, 03, 07 & 08)
+   * **Config 5:** 5 buttons (Button numbers 01, 03, 05, 07 & 08)
+6. Click submit. The device is created and nested under the parent **Edisio Dongle** device, generating a battery sensor and one button sensor per Button number (e.g. `Button 01`, `Button 03`, `Button 05`, `Button 07`, `Button 08` for Config 5).
 
 ## Button Sensor States
 
-Button sensors (`Button 1`, `Button 2`, etc.) represent the state of each button:
+Each button sensor is named `Button <Button number>`, using the same two-digit Button number the switch sends and that appears in the `button` field of `edisio_button_event` (e.g. the sensor `Button 05` reacts to events with `button: "05"`). Unique IDs are `<Radio ID>_button_<Button number>`.
+
+> [!NOTE]
+> Upgrading from an earlier version renames existing button sensors (e.g. `Button 2` becomes `Button 03`) but keeps their entity IDs, history and customisations. Newly created sensors get entity IDs ending in `_button_<Button number>`.
+
+Button sensors represent the state of each button:
 - `normal` (Idle)
 - `short-press` (Transitions on toggle/short action)
 - `long-press` (Transitions on up/down actions)

@@ -23,9 +23,9 @@ async def async_setup_entry(
         configured_devices = config_entry.options.get("devices", {})
         device_cfg = configured_devices.get(device_id, {})
         active_buttons_cfg = device_cfg.get("active_buttons", DEFAULT_ACTIVE_BUTTONS)
-        button_ids = BUTTON_CONFIGS.get(active_buttons_cfg, [])
-        for index, button_id in enumerate(button_ids):
-            entities.append(EdisioButtonSensor(device_id, button_id, index + 1, config_entry.entry_id))
+        button_numbers = BUTTON_CONFIGS.get(active_buttons_cfg, [])
+        for button_number in button_numbers:
+            entities.append(EdisioButtonSensor(device_id, button_number, config_entry.entry_id))
             
         async_add_entities(entities, update_before_add=False)
 
@@ -43,9 +43,9 @@ async def async_setup_entry(
         entities.append(EdisioBatterySensor(device_id, config_entry.entry_id))
         
         active_buttons_cfg = device_cfg.get("active_buttons", DEFAULT_ACTIVE_BUTTONS)
-        button_ids = BUTTON_CONFIGS.get(active_buttons_cfg, [])
-        for index, button_id in enumerate(button_ids):
-            entities.append(EdisioButtonSensor(device_id, button_id, index + 1, config_entry.entry_id))
+        button_numbers = BUTTON_CONFIGS.get(active_buttons_cfg, [])
+        for button_number in button_numbers:
+            entities.append(EdisioButtonSensor(device_id, button_number, config_entry.entry_id))
             
         async_add_entities(entities)
 
@@ -93,12 +93,12 @@ class EdisioBatterySensor(SensorEntity):
 class EdisioButtonSensor(SensorEntity):
     _attr_has_entity_name: bool = True
 
-    def __init__(self, device_id: str, button_id: str, button_index: int, entry_id: str) -> None:
+    def __init__(self, device_id: str, button_number: str, entry_id: str) -> None:
         self._device_id: str = device_id
-        self._button_id: str = button_id
+        self._button_number: str = button_number
         self._entry_id: str = entry_id
-        self._attr_unique_id: str = f"{device_id}_button_{button_id}"
-        self._attr_name: str = f"Button {button_index}"
+        self._attr_unique_id: str = f"{device_id}_button_{button_number}"
+        self._attr_name: str = f"Button {button_number}"
         self._attr_native_value: str = "normal"
         self._reset_task: Optional[asyncio.Task] = None
 
@@ -123,7 +123,7 @@ class EdisioButtonSensor(SensorEntity):
 
     @callback
     def _update_button(self, data: Dict[str, Any]) -> None:
-        if data.get("button") != self._button_id:
+        if data.get("button") != self._button_number:
             return
 
         action = data.get("action", "")
