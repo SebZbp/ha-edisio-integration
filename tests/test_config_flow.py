@@ -61,7 +61,7 @@ def _device_flow(entry_options=None):
 
 async def _submit(flow, user_input):
     await flow.async_step_device({"device_id": "06708E57", "button": "05"})
-    with patch("custom_components.edisio.config_flow.dr.async_get") as mock_get:
+    with patch("custom_components.edisio.device.dr.async_get") as mock_get:
         registry = mock_get.return_value
         await flow.async_step_device_confirm(user_input=user_input)
     return registry

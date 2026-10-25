@@ -6,16 +6,22 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.components import usb
-from homeassistant.helpers import device_registry as dr, selector
+from homeassistant.helpers import selector
 
 from .const import DOMAIN, CONF_SERIAL_PORT, CONF_ACTIVE_BUTTONS, DEFAULT_ACTIVE_BUTTONS, CONF_NAME, CONF_AREA_ID
-from .device import device_info
+from .device import apply_area
+from .options_flow import EdisioOptionsFlow
 
 _LOGGER = logging.getLogger(__name__)
 
 class EdisioConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
     _serial_port: Optional[str] = None
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> EdisioOptionsFlow:
+        return EdisioOptionsFlow()
 
     async def async_step_user(
         self, user_input: Optional[Dict[str, Any]] = None
@@ -90,12 +96,7 @@ class EdisioConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 # The area is applied once, when the registry entry is created; it is not stored.
                 area_id = user_input.get(CONF_AREA_ID)
                 if area_id:
-                    registry = dr.async_get(self.hass)
-                    device = registry.async_get_or_create(
-                        config_entry_id=entry.entry_id,
-                        **device_info(self._device_id, device_cfg, entry.entry_id),
-                    )
-                    registry.async_update_device(device.id, area_id=area_id)
+                    apply_area(self.hass, entry.entry_id, self._device_id, device_cfg, area_id)
                 new_options = dict(entry.options)
                 new_options["devices"] = devices
                 self.hass.config_entries.async_update_entry(entry, options=new_options)
