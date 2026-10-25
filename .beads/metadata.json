@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "edisio",
+  "project_id": "ba023b1c-b94c-4ae1-8fe2-3bf549146edd"
+}
