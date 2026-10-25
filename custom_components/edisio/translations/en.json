@@ -29,7 +29,8 @@
   "options": {
     "abort": {
       "not_implemented": "This option is not available yet.",
-      "no_devices": "No Device is configured yet."
+      "no_devices": "No Devices are configured yet.",
+      "entity_ids_skipped": "Saved. These entity IDs were not changed because another entity already uses them: {skipped}"
     },
     "error": {
       "invalid_radio_id": "The Radio ID must be exactly 8 hex digits, e.g. 0670A248.",
@@ -62,6 +63,25 @@
         "description": "Pick the Device to forget. Its sensors are deleted; if it is pressed again, a new discovery card is offered.",
         "data": {
           "radio_id": "Device"
+        }
+      },
+      "edit_device": {
+        "title": "Edit a Device",
+        "description": "Choose the Device to edit.",
+        "data": {
+          "radio_id": "Device"
+        }
+      },
+      "edit_device_settings": {
+        "title": "Edit Device {radio_id}",
+        "description": "Changing the name replaces any name set on the Home Assistant device page.",
+        "data": {
+          "name": "Name (empty: default Edisio EBP8-B <Radio ID>)",
+          "area_id": "Area",
+          "update_entity_ids": "Also update entity IDs to match the name"
+        },
+        "data_description": {
+          "update_entity_ids": "Off by default: dashboards and scripts using the old entity IDs keep working. Unique IDs never change."
         }
       }
     }
