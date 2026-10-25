@@ -28,7 +28,8 @@
   },
   "options": {
     "abort": {
-      "not_implemented": "This option is not available yet."
+      "not_implemented": "This option is not available yet.",
+      "no_devices": "No Device is configured yet."
     },
     "error": {
       "invalid_radio_id": "The Radio ID must be exactly 8 hex digits, e.g. 0670A248.",
@@ -54,6 +55,13 @@
         },
         "data_description": {
           "radio_id": "8 hex digits, e.g. 0670A248"
+        }
+      },
+      "remove_device": {
+        "title": "Remove a Device",
+        "description": "Pick the Device to forget. Its sensors are deleted; if it is pressed again, a new discovery card is offered.",
+        "data": {
+          "radio_id": "Device"
         }
       }
     }
