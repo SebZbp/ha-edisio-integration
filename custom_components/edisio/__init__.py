@@ -6,6 +6,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers import device_registry as dr
 from .const import DOMAIN, CONF_SERIAL_PORT
 from .hub import EdisioHub
+from .press import PressFilter
 
 PLATFORMS: List[str] = ["sensor"]
 
@@ -27,11 +28,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         model="Dongle",
     )
     
+    press_filter = PressFilter()
+
     @callback
     def handle_edisio_event(data: Dict[str, Any]) -> None:
         @callback
         def async_handle_event(event_data: Dict[str, Any]) -> None:
             device_id: str = event_data.get("id", "")
+            if press_filter.is_repeat(device_id, event_data.get("button", ""), event_data.get("cmd", "")):
+                return
             
             # Check if device is configured in options
             configured_devices = entry.options.get("devices", {})
