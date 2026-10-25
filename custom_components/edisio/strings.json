@@ -17,9 +17,11 @@
       },
       "device_confirm": {
         "title": "Configure Edisio Device {device_id}",
-        "description": "Button {button} was pressed on Device {device_id}. Please enter the number of active buttons on the EBP8-B switch board.",
+        "description": "Button {button} was pressed on Device {device_id}. Select the Button layout of the Device, and optionally name it (e.g. BP Kitchen) and choose its area.",
         "data": {
-          "active_buttons": "Number of active buttons (1-5)"
+          "active_buttons": "Button layout (number of active Buttons, 1-5)",
+          "name": "Name (optional, default: Edisio EBP8-B <Radio ID>)",
+          "area_id": "Area (optional)"
         }
       }
     }

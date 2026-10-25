@@ -7,6 +7,7 @@ from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.const import PERCENTAGE
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from .const import DOMAIN, BUTTON_CONFIGS, DEFAULT_ACTIVE_BUTTONS
+from .device import device_info
 
 async def async_setup_entry(
     hass: HomeAssistant, 
@@ -39,8 +40,8 @@ async def async_setup_entry(
 def _device_sensors(device_id: str, device_cfg: Dict[str, Any], entry_id: str) -> List[SensorEntity]:
     """The Battery sensor plus one Button sensor per Button number of the Device's Button layout."""
     active_buttons_cfg = device_cfg.get("active_buttons", DEFAULT_ACTIVE_BUTTONS)
-    return [EdisioBatterySensor(device_id, entry_id)] + [
-        EdisioButtonSensor(device_id, button_number, entry_id)
+    return [EdisioBatterySensor(device_id, entry_id, device_cfg)] + [
+        EdisioButtonSensor(device_id, button_number, entry_id, device_cfg)
         for button_number in BUTTON_CONFIGS.get(active_buttons_cfg, [])
     ]
 
@@ -49,7 +50,8 @@ class EdisioBatterySensor(SensorEntity):
     _attr_device_class = SensorDeviceClass.BATTERY
     _attr_native_unit_of_measurement: str = PERCENTAGE
 
-    def __init__(self, device_id: str, entry_id: str) -> None:
+    def __init__(self, device_id: str, entry_id: str, device_cfg: Optional[Dict[str, Any]] = None) -> None:
+        self._device_cfg: Dict[str, Any] = device_cfg or {}
         self._device_id: str = device_id
         self._entry_id: str = entry_id
         self._attr_unique_id: str = f"{device_id}_battery"
@@ -58,13 +60,7 @@ class EdisioBatterySensor(SensorEntity):
 
     @property
     def device_info(self) -> Dict[str, Any]:
-        return {
-            "identifiers": {(DOMAIN, self._device_id)},
-            "name": f"Edisio EBP8-B {self._device_id}",
-            "manufacturer": "Edisio",
-            "model": "EBP8-B",
-            "via_device": (DOMAIN, self._entry_id)
-        }
+        return device_info(self._device_id, self._device_cfg, self._entry_id)
 
     async def async_added_to_hass(self) -> None:
         self.async_on_remove(
@@ -88,7 +84,8 @@ class EdisioBatterySensor(SensorEntity):
 class EdisioButtonSensor(SensorEntity):
     _attr_has_entity_name: bool = True
 
-    def __init__(self, device_id: str, button_number: str, entry_id: str) -> None:
+    def __init__(self, device_id: str, button_number: str, entry_id: str, device_cfg: Optional[Dict[str, Any]] = None) -> None:
+        self._device_cfg: Dict[str, Any] = device_cfg or {}
         self._device_id: str = device_id
         self._button_number: str = button_number
         self._entry_id: str = entry_id
@@ -99,13 +96,7 @@ class EdisioButtonSensor(SensorEntity):
 
     @property
     def device_info(self) -> Dict[str, Any]:
-        return {
-            "identifiers": {(DOMAIN, self._device_id)},
-            "name": f"Edisio EBP8-B {self._device_id}",
-            "manufacturer": "Edisio",
-            "model": "EBP8-B",
-            "via_device": (DOMAIN, self._entry_id)
-        }
+        return device_info(self._device_id, self._device_cfg, self._entry_id)
 
     async def async_added_to_hass(self) -> None:
         self.async_on_remove(

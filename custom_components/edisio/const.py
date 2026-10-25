@@ -1,6 +1,8 @@
 DOMAIN = "edisio"
 CONF_SERIAL_PORT = "serial_port"
 CONF_ACTIVE_BUTTONS = "active_buttons"
+CONF_NAME = "name"
+CONF_AREA_ID = "area_id"
 DEFAULT_ACTIVE_BUTTONS = 5
 
 BUTTON_CONFIGS = {
