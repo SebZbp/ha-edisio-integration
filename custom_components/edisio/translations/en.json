@@ -17,9 +17,73 @@
       },
       "device_confirm": {
         "title": "Configure Edisio Device {device_id}",
-        "description": "Please enter the number of active buttons on the EBP8-B switch board.",
+        "description": "Button {button} was pressed on Device {device_id}. Select the Button layout of the Device, and optionally name it (e.g. BP Kitchen) and choose its area.",
         "data": {
-          "active_buttons": "Number of active buttons (1-5)"
+          "active_buttons": "Button layout (number of active Buttons, 1-5)",
+          "name": "Name (optional, default: Edisio EBP8-B <Radio ID>)",
+          "area_id": "Area (optional)"
+        }
+      }
+    }
+  },
+  "options": {
+    "abort": {
+      "not_implemented": "This option is not available yet.",
+      "no_devices": "No Devices are configured yet.",
+      "unknown_device": "This Device is no longer configured."
+    },
+    "error": {
+      "invalid_radio_id": "The Radio ID must be exactly 8 hex digits, e.g. 0670A248.",
+      "already_configured": "This Device is already configured."
+    },
+    "step": {
+      "init": {
+        "title": "Manage Edisio Devices",
+        "menu_options": {
+          "add_device": "Add a Device",
+          "edit_device": "Edit a Device",
+          "remove_device": "Remove a Device"
+        }
+      },
+      "add_device": {
+        "title": "Add a Device",
+        "description": "Enter the Radio ID of the Device without pressing it. Optionally name it (e.g. BP Kitchen) and choose its area.",
+        "data": {
+          "radio_id": "Radio ID",
+          "active_buttons": "Button layout (number of active Buttons, 1-5)",
+          "name": "Name (optional, default: Edisio EBP8-B <Radio ID>)",
+          "area_id": "Area (optional)"
+        },
+        "data_description": {
+          "radio_id": "8 hex digits, e.g. 0670A248"
+        }
+      },
+      "remove_device": {
+        "title": "Remove a Device",
+        "description": "Pick the Device to forget. Its sensors are deleted; if it is pressed again, a new discovery card is offered.",
+        "data": {
+          "radio_id": "Device"
+        }
+      },
+      "edit_device": {
+        "title": "Edit a Device",
+        "description": "Choose the Device to edit.",
+        "data": {
+          "radio_id": "Device"
+        }
+      },
+      "edit_device_settings": {
+        "title": "Edit Device {radio_id}",
+        "description": "Changing the name replaces any name set on the Home Assistant device page.",
+        "data": {
+          "active_buttons": "Button layout (number of active Buttons, 1 to 5)",
+          "name": "Name (empty: default Edisio EBP8-B <Radio ID>)",
+          "area_id": "Area",
+          "update_entity_ids": "Also update entity IDs to match the name"
+        },
+        "data_description": {
+          "active_buttons": "Button sensors for Button numbers that are no longer in the layout are removed; the others are kept.",
+          "update_entity_ids": "Off by default: dashboards and scripts using the old entity IDs keep working. Unique IDs never change."
         }
       }
     }

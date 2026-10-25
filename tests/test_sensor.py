@@ -122,3 +122,15 @@ async def test_button_sensor_press_and_reset():
     for task in created_tasks:
         if not task.done():
             task.cancel()
+
+
+def test_sensors_register_device_under_stored_name_or_default():
+    from custom_components.edisio.sensor import _device_sensors
+    named = _device_sensors("06708E57", {"active_buttons": 1, "name": "BP Cuisine"}, "dongle")
+    plain = _device_sensors("06708E57", {"active_buttons": 1}, "dongle")
+    for entity in named:
+        assert entity.device_info["name"] == "BP Cuisine"
+        assert entity.device_info["via_device"] == (DOMAIN, "dongle")
+        assert entity.device_info["identifiers"] == {(DOMAIN, "06708E57")}
+    for entity in plain:
+        assert entity.device_info["name"] == "Edisio EBP8-B 06708E57"

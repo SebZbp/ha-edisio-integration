@@ -46,7 +46,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                         hass.config_entries.flow.async_init(
                             DOMAIN,
                             context={"source": "device", "device_id": device_id},
-                            data={"device_id": device_id}
+                            data={"device_id": device_id, "button": event_data.get("button", "")}
                         )
                     )
                 return

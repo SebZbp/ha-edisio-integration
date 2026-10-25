@@ -6,14 +6,22 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.components import usb
+from homeassistant.helpers import selector
 
-from .const import DOMAIN, CONF_SERIAL_PORT, CONF_ACTIVE_BUTTONS, DEFAULT_ACTIVE_BUTTONS
+from .const import DOMAIN, CONF_SERIAL_PORT, CONF_ACTIVE_BUTTONS, DEFAULT_ACTIVE_BUTTONS, CONF_NAME, CONF_AREA_ID
+from .device import apply_area, build_device_cfg
+from .options_flow import EdisioOptionsFlow
 
 _LOGGER = logging.getLogger(__name__)
 
 class EdisioConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
     _serial_port: Optional[str] = None
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> EdisioOptionsFlow:
+        return EdisioOptionsFlow()
 
     async def async_step_user(
         self, user_input: Optional[Dict[str, Any]] = None
@@ -67,6 +75,7 @@ class EdisioConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_device(self, discovery_info: Dict[str, Any]) -> FlowResult:
         self._device_id = discovery_info["device_id"]
+        self._button = discovery_info.get("button", "")
         await self.async_set_unique_id(f"edisio_{self._device_id}")
         self._abort_if_unique_id_configured()
         return await self.async_step_device_confirm()
@@ -79,9 +88,12 @@ class EdisioConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if entries:
                 entry = entries[0]
                 devices = dict(entry.options.get("devices", {}))
-                devices[self._device_id] = {
-                    "active_buttons": user_input["active_buttons"]
-                }
+                device_cfg = build_device_cfg(user_input)
+                devices[self._device_id] = device_cfg
+                # The area is applied once, when the registry entry is created; it is not stored.
+                area_id = user_input.get(CONF_AREA_ID)
+                if area_id:
+                    apply_area(self.hass, entry.entry_id, self._device_id, device_cfg, area_id)
                 new_options = dict(entry.options)
                 new_options["devices"] = devices
                 self.hass.config_entries.async_update_entry(entry, options=new_options)
@@ -95,7 +107,12 @@ class EdisioConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema({
                 vol.Required(CONF_ACTIVE_BUTTONS, default=DEFAULT_ACTIVE_BUTTONS): vol.All(
                     vol.Coerce(int), vol.Range(min=1, max=5)
-                )
+                ),
+                vol.Optional(CONF_NAME): str,
+                vol.Optional(CONF_AREA_ID): selector.AreaSelector(),
             }),
-            description_placeholders={"device_id": self._device_id}
+            description_placeholders={
+                "device_id": self._device_id,
+                "button": self._button,
+            }
         )

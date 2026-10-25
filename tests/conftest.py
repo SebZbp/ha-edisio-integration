@@ -7,6 +7,7 @@ import pytest
 import pytest_asyncio
 from homeassistant import config_entries, loader
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import EntityPlatform
@@ -22,6 +23,7 @@ async def hass(tmp_path):
     loader.async_setup(hass)  # integration loader, needed to validate automation config
     hass.config_entries = config_entries.ConfigEntries(hass, {})
     await hass.config_entries.async_initialize()
+    await ar.async_load(hass)
     await dr.async_load(hass)
     await er.async_load(hass)
     yield hass
