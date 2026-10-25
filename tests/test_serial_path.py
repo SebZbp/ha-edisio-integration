@@ -13,9 +13,15 @@ RAW = "/dev/ttyUSB1"
 pytestmark = pytest.mark.asyncio
 
 
+def _hass():
+    hass = MagicMock(spec=HomeAssistant)
+    hass.async_add_executor_job = AsyncMock(side_effect=lambda f, *a: f(*a))
+    return hass
+
+
 def _flow():
     flow = EdisioConfigFlow()
-    flow.hass = MagicMock(spec=HomeAssistant)
+    flow.hass = _hass()
     flow._async_current_entries = MagicMock(return_value=[])
     flow.async_set_unique_id = AsyncMock()
     flow._abort_if_unique_id_configured = MagicMock()
@@ -50,10 +56,18 @@ async def test_manual_setup_keeps_path_without_by_id_link():
 
 
 async def test_existing_entry_is_migrated_to_by_id_path():
-    hass = MagicMock(spec=HomeAssistant)
+    hass = _hass()
     entry = MagicMock(version=1, data={"serial_port": RAW}, unique_id=RAW)
     with patch("custom_components.edisio.usb.get_serial_by_id", _resolve):
         assert await async_migrate_entry(hass, entry) is True
     hass.config_entries.async_update_entry.assert_called_once_with(
         entry, data={"serial_port": BY_ID}, unique_id=BY_ID, version=2
     )
+
+
+async def test_migration_leaves_missing_unique_id_unset():
+    hass = _hass()
+    entry = MagicMock(version=1, data={"serial_port": RAW}, unique_id=None)
+    with patch("custom_components.edisio.usb.get_serial_by_id", _resolve):
+        await async_migrate_entry(hass, entry)
+    assert hass.config_entries.async_update_entry.call_args.kwargs["unique_id"] is None

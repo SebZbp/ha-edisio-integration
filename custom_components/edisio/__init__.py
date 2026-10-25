@@ -82,7 +82,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if entry.version < 2:
-        port = usb.get_serial_by_id(entry.data.get(CONF_SERIAL_PORT, ""))
+        port = await hass.async_add_executor_job(usb.get_serial_by_id, entry.data.get(CONF_SERIAL_PORT, ""))
         hass.config_entries.async_update_entry(
             entry,
             data={**entry.data, CONF_SERIAL_PORT: port},

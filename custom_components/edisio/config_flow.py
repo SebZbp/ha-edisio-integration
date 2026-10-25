@@ -31,7 +31,7 @@ class EdisioConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 return self.async_abort(reason="single_instance_allowed")
 
             if user_input is not None:
-                data = {**user_input, CONF_SERIAL_PORT: usb.get_serial_by_id(user_input[CONF_SERIAL_PORT])}
+                data = {**user_input, CONF_SERIAL_PORT: await self.hass.async_add_executor_job(usb.get_serial_by_id, user_input[CONF_SERIAL_PORT])}
                 return self.async_create_entry(title="Edisio Dongle", data=data)
 
             return self.async_show_form(
@@ -47,7 +47,7 @@ class EdisioConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if self._async_current_entries():
                 return self.async_abort(reason="single_instance_allowed")
 
-            self._serial_port = usb.get_serial_by_id(discovery_info.device)
+            self._serial_port = await self.hass.async_add_executor_job(usb.get_serial_by_id, discovery_info.device)
             await self.async_set_unique_id(self._serial_port)
             self._abort_if_unique_id_configured()
             
