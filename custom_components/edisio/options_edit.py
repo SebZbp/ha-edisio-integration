@@ -3,8 +3,8 @@
 Steps:
     edit_device            pick a configured Device ("BP Cuisine (06708E57)")
     edit_device_settings   the edit form, one field per editable property. To add a field
-                           (e.g. Button layout, zmz.3): add it in ``_edit_schema`` and handle it
-                           in ``_apply_edit``.
+                           (name, area, entity IDs, Button layout): add a field in ``_edit_schema``
+                           and handle it in ``_apply_edit``.
 """
 from typing import Any, Dict, List, Optional
 
@@ -15,7 +15,15 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import selector
 from homeassistant.util import slugify
 
-from .const import CONF_AREA_ID, CONF_NAME, CONF_RADIO_ID, DOMAIN
+from .const import (
+    BUTTON_CONFIGS,
+    CONF_ACTIVE_BUTTONS,
+    CONF_AREA_ID,
+    CONF_NAME,
+    CONF_RADIO_ID,
+    DEFAULT_ACTIVE_BUTTONS,
+    DOMAIN,
+)
 from .device import device_name
 
 CONF_UPDATE_ENTITY_IDS = "update_entity_ids"
@@ -71,6 +79,9 @@ class EditDeviceSteps:
         cfg = self.config_entry.options["devices"][radio_id]
         device = self._registry_device(radio_id)
         return vol.Schema({
+            vol.Required(
+                CONF_ACTIVE_BUTTONS, default=cfg.get(CONF_ACTIVE_BUTTONS, DEFAULT_ACTIVE_BUTTONS)
+            ): vol.All(vol.Coerce(int), vol.Range(min=1, max=5)),
             vol.Optional(CONF_NAME, description={"suggested_value": cfg.get(CONF_NAME, "")}): str,
             vol.Optional(
                 CONF_AREA_ID,
@@ -93,7 +104,11 @@ class EditDeviceSteps:
             cfg[CONF_NAME] = name
         else:
             cfg.pop(CONF_NAME, None)
+        old_layout = cfg.get(CONF_ACTIVE_BUTTONS, DEFAULT_ACTIVE_BUTTONS)
+        new_layout = user_input.get(CONF_ACTIVE_BUTTONS, old_layout)
+        cfg[CONF_ACTIVE_BUTTONS] = new_layout
         self._edited_cfg = cfg
+        self._remove_dropped_buttons(radio_id, new_layout)
 
         device = self._registry_device(radio_id)
         if device is not None:
@@ -106,6 +121,18 @@ class EditDeviceSteps:
         if user_input.get(CONF_UPDATE_ENTITY_IDS):
             return self._update_entity_ids(radio_id, device_name(radio_id, cfg))
         return []
+
+    def _remove_dropped_buttons(self, radio_id: str, layout: int) -> None:
+        """Remove Button sensors whose Button number is not in ``layout``; others are untouched.
+
+        Entities for new Button numbers are created by the entry reload.
+        """
+        registry = er.async_get(self.hass)
+        kept = {f"{radio_id}_button_{n}" for n in BUTTON_CONFIGS.get(layout, [])}
+        prefix = f"{radio_id}_button_"
+        for entity in er.async_entries_for_config_entry(registry, self.config_entry.entry_id):
+            if (entity.unique_id or "").startswith(prefix) and entity.unique_id not in kept:
+                registry.async_remove(entity.entity_id)
 
     def _update_entity_ids(self, radio_id: str, name: str) -> List[str]:
         registry = er.async_get(self.hass)

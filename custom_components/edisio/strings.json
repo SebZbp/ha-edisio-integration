@@ -76,11 +76,13 @@
         "title": "Edit Device {radio_id}",
         "description": "Changing the name replaces any name set on the Home Assistant device page.",
         "data": {
+          "active_buttons": "Button layout (number of active Buttons, 1 to 5)",
           "name": "Name (empty: default Edisio EBP8-B <Radio ID>)",
           "area_id": "Area",
           "update_entity_ids": "Also update entity IDs to match the name"
         },
         "data_description": {
+          "active_buttons": "Button sensors for Button numbers that are no longer in the layout are removed; the others are kept.",
           "update_entity_ids": "Off by default: dashboards and scripts using the old entity IDs keep working. Unique IDs never change."
         }
       }
