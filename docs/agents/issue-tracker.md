@@ -32,7 +32,7 @@ Specs are saved in `docs/specs/<feature-slug>.md` (committed to git). The matchi
 | Reopen | `bd reopen <id>` |
 
 ## Sync before every state change
-Before any command that changes a ticket's state (`update`, `close`, `reopen`, `unclaim`, `set-state`, `label add|remove`, `ready --claim`), run `bd sync` (pull, conflict check, recompute blocked flags, push).
+Before any command that changes a ticket's state (`create`, `update`, `close`, `reopen`, `unclaim`, `set-state`, `label add|remove`, `ready --claim`), run `bd sync` (pull, conflict check, recompute blocked flags, push).
 This is enforced by the PreToolUse hook `.claude/hooks/bd-sync-before-change.sh`, which blocks the command if the sync fails (exit 2 = merge conflict, resolve by hand with `bd conflicts`). If no Dolt remote is configured (`bd dolt remote list` empty) the sync is skipped.
 
 ## Wayfinding (/wayfinder)

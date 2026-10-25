@@ -12,7 +12,9 @@ blueprint:
   input:
     edisio_device:
       name: Edisio Device
-      description: The Edisio Device to control.
+      description: >-
+        The Edisio Device to control. The blueprint matches it to the event's
+        device_id, which is the Device's Radio ID (not a Home Assistant device ID).
       selector:
         device:
           filter:

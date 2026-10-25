@@ -74,14 +74,14 @@ The state automatically resets back to `normal` after 1 second.
 
 Whenever you press a button on an Edisio switch, this integration fires a native `edisio_button_event` onto the Home Assistant event bus. You can trigger manual automations off this event.
 
-The trigger payload looks like this:
+The trigger payload looks like this. `device_id` holds the Device's Radio ID (the 8-hex-digit identifier it sends in every packet), not a Home Assistant device ID:
 
 ```yaml
 trigger:
   - platform: event
     event_type: edisio_button_event
     event_data:
-      device_id: "06709603"
+      device_id: "06709603" # the Device's Radio ID, not a Home Assistant device ID
       button: "05"
       type: "short_press" # Can be 'short_press' or 'long_press'
 ```

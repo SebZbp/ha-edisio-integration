@@ -23,7 +23,7 @@ Each Button sensor is named "Button <Button number>" (e.g. "Button 05"), the sam
 
 ## Implementation Decisions
 
-- A Button sensor's display name is "Button " followed by the two-digit Button number from the Button layout (`BUTTON_CONFIGS`), e.g. "Button 01", "Button 07". The sequential index is no longer used for naming.
+- A Button sensor's display name is "Button " followed by the two-digit Button number from the Button layout (`BUTTON_LAYOUTS`), e.g. "Button 01", "Button 07". The sequential index is no longer used for naming.
 - Unique IDs remain `<Radio ID>_button_<Button number>`; nothing in the registry is rewritten on upgrade.
 - Because the name of an existing entity changes but its entity ID is frozen, existing entities show the new name with their old entity ID until the user opts into the options-flow entity ID update. New entities get entity IDs derived from "<device name> Button <Button number>", i.e. ending in `_button_<Button number>`.
 - Sensor state values ("normal", "short-press", "long-press") are unchanged.
