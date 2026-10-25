@@ -3,6 +3,7 @@ from typing import Dict, Any, List
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_send
+from homeassistant.components import usb
 from homeassistant.helpers import device_registry as dr
 from .const import DOMAIN, CONF_SERIAL_PORT
 from .hub import EdisioHub
@@ -83,6 +84,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
+
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    if entry.version < 2:
+        port = await hass.async_add_executor_job(usb.get_serial_by_id, entry.data.get(CONF_SERIAL_PORT, ""))
+        hass.config_entries.async_update_entry(
+            entry,
+            data={**entry.data, CONF_SERIAL_PORT: port},
+            unique_id=port if entry.unique_id else None,
+            version=2,
+        )
+    return True
+
 
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     await hass.config_entries.async_reload(entry.entry_id)
