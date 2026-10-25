@@ -103,5 +103,22 @@ To make migration from the old `RFPlayer` integration painless, we've included a
 1. Copy the blueprint from `blueprints/automation/edisio/ebp8b_controller.yaml` to your Home Assistant `blueprints/automation/edisio/` folder (or import it).
 2. Go to **Settings** -> **Automations & Blueprints** -> **Blueprints**.
 3. Create a new automation from the **Edisio EBP8-B Switch Controller** blueprint.
-4. Select your Device ID (e.g., `06709603`).
-5. Use the visual editor to drop in the exact actions you want for short and long presses on each button!
+4. Pick your switch from the list of Edisio devices (e.g. "BP Cuisine"). The blueprint reads its Radio ID from the device, so there is nothing to type.
+5. Open the section for each Button number your switch has and drop in the actions you want for short and long presses. Leave the other Buttons empty.
+
+The blueprint requires Home Assistant 2024.6 or later (collapsible input sections).
+
+#### Button numbers per layout
+
+A switch sends Button numbers `01` to `08`; which ones depends on its Button layout:
+
+| Button layout | Button numbers sent |
+| --- | --- |
+| 1 Button | `05` |
+| 2 Buttons | `04 06` |
+| 3 Buttons | `02 07 08` |
+| 4 Buttons | `01 03 07 08` |
+| 5 Buttons | `01 03 05 07 08` |
+
+> [!NOTE]
+> Automations created from the earlier version of the blueprint (inputs `button_1_*` to `button_5_*` and a typed Device ID) are not migrated. Recreate them from the new blueprint.
