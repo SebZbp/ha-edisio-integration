@@ -48,17 +48,17 @@ Once the Edisio Dongle is configured:
 2. The integration will automatically intercept the RF signal and trigger a discovery flow.
 3. A discovery notification card will appear on the **Devices & Services** integrations dashboard: **Edisio Device `<device_id>` Discovered**.
 4. Click **Configure** on the discovery card.
-5. You will be prompted to select the number of active buttons on your switch board (Config 1 to Config 5):
-   * **Config 1:** 1 button (Button number 05)
-   * **Config 2:** 2 buttons (Button numbers 04 & 06)
-   * **Config 3:** 3 buttons (Button numbers 02, 07 & 08)
-   * **Config 4:** 4 buttons (Button numbers 01, 03, 07 & 08)
-   * **Config 5:** 5 buttons (Button numbers 01, 03, 05, 07 & 08)
-6. Click submit. The device is created and nested under the parent **Edisio Dongle** device, generating a battery sensor and one button sensor per Button number (e.g. `Button 01`, `Button 03`, `Button 05`, `Button 07`, `Button 08` for Config 5).
+5. You will be prompted to select the Device's Button layout (shown as Config 1 to Config 5 in the setup form):
+   * **1 Button:** Button number 05
+   * **2 Buttons:** Button numbers 04 & 06
+   * **3 Buttons:** Button numbers 02, 07 & 08
+   * **4 Buttons:** Button numbers 01, 03, 07 & 08
+   * **5 Buttons:** Button numbers 01, 03, 05, 07 & 08
+6. Click submit. The device is created and nested under the parent **Edisio Dongle** device, generating a battery sensor and one button sensor per Button number (e.g. `Button 01`, `Button 03`, `Button 05`, `Button 07`, `Button 08` for the 5-Button layout).
 
 ## Button Sensor States
 
-Each button sensor is named `Button <Button number>`, using the same two-digit Button number the switch sends and that appears in the `button` field of `edisio_button_event` (e.g. the sensor `Button 05` reacts to events with `button: "05"`). Unique IDs are `<Radio ID>_button_<Button number>`.
+Each button sensor is named `Button <Button number>`, using the same two-digit Button number the Device sends and that appears in the `button` field of `edisio_button_event` (e.g. the sensor `Button 05` reacts to events with `button: "05"`). Unique IDs are `<Radio ID>_button_<Button number>`.
 
 > [!NOTE]
 > Upgrading from an earlier version renames existing button sensors (e.g. `Button 2` becomes `Button 03`) but keeps their entity IDs, history and customisations. Newly created sensors get entity IDs ending in `_button_<Button number>`.
@@ -103,14 +103,14 @@ To make migration from the old `RFPlayer` integration painless, we've included a
 1. Copy the blueprint from `blueprints/automation/edisio/ebp8b_controller.yaml` to your Home Assistant `blueprints/automation/edisio/` folder (or import it).
 2. Go to **Settings** -> **Automations & Blueprints** -> **Blueprints**.
 3. Create a new automation from the **Edisio EBP8-B Switch Controller** blueprint.
-4. Pick your switch from the list of Edisio devices (e.g. "BP Cuisine"). The blueprint reads its Radio ID from the device, so there is nothing to type.
-5. Open the section for each Button number your switch has and drop in the actions you want for short and long presses. Leave the other Buttons empty.
+4. Pick your Device from the list of Edisio Devices (e.g. "BP Cuisine"); the Dongle is not offered. The blueprint reads its Radio ID from the Device, so there is nothing to type.
+5. Open the section for each Button number your Device has and drop in the actions you want for short and long presses. Leave the other Buttons empty.
 
 The blueprint requires Home Assistant 2024.6 or later (collapsible input sections).
 
 #### Button numbers per layout
 
-A switch sends Button numbers `01` to `08`; which ones depends on its Button layout:
+A Device sends Button numbers `01` to `08`; which ones depends on its Button layout:
 
 | Button layout | Button numbers sent |
 | --- | --- |

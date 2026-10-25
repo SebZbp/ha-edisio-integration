@@ -1,62 +1,26 @@
 """Button sensor naming, seen through the entity registry (spec: stable-button-naming)."""
-import logging
-from datetime import timedelta
 
 import pytest
-import pytest_asyncio
-from homeassistant import config_entries
-from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.entity_platform import EntityPlatform
 
-from custom_components.edisio import sensor
 from custom_components.edisio.const import DOMAIN
 
 
-@pytest_asyncio.fixture
-async def hass(tmp_path):
-    hass = HomeAssistant(str(tmp_path))
-    hass.config_entries = config_entries.ConfigEntries(hass, {})
-    await hass.config_entries.async_initialize()
-    await dr.async_load(hass)
-    await er.async_load(hass)
-    yield hass
-    await hass.async_stop(force=True)
+@pytest.fixture
+def set_up_sensors(hass, add_config_entry, set_up_sensor_platform):
+    """Run the sensor platform for a config entry holding ``devices``; return the entity registry."""
 
+    async def _set_up(devices: dict) -> er.EntityRegistry:
+        entry = add_config_entry(data={"serial_port": "/dev/null"}, options={"devices": devices})
+        # Parent Dongle device, normally registered by the integration's own setup.
+        dr.async_get(hass).async_get_or_create(
+            config_entry_id=entry.entry_id, identifiers={(DOMAIN, entry.entry_id)}
+        )
+        await set_up_sensor_platform(entry)
+        return er.async_get(hass)
 
-async def _set_up_sensors(hass: HomeAssistant, devices: dict) -> er.EntityRegistry:
-    """Run the sensor platform for a config entry holding ``devices``."""
-    entry = config_entries.ConfigEntry(
-        version=1,
-        minor_version=1,
-        domain=DOMAIN,
-        title="Edisio",
-        data={"serial_port": "/dev/null"},
-        options={"devices": devices},
-        source=config_entries.SOURCE_USER,
-        unique_id=None,
-        discovery_keys={},
-    )
-    # Register the entry without running the integration's own setup (no dongle).
-    hass.config_entries._entries[entry.entry_id] = entry
-    hass.data[DOMAIN] = {entry.entry_id: {"devices": set()}}
-    dr.async_get(hass).async_get_or_create(
-        config_entry_id=entry.entry_id, identifiers={(DOMAIN, entry.entry_id)}
-    )
-    platform = EntityPlatform(
-        hass=hass,
-        logger=logging.getLogger(__name__),
-        domain="sensor",
-        platform_name=DOMAIN,
-        platform=sensor,
-        scan_interval=timedelta(seconds=30),
-        entity_namespace=None,
-    )
-    platform.config_entry = entry
-    await platform.async_setup_entry(entry)
-    await hass.async_block_till_done()
-    return er.async_get(hass)
+    return _set_up
 
 
 def _button_entries(registry: er.EntityRegistry, radio_id: str) -> list[er.RegistryEntry]:
@@ -78,8 +42,8 @@ def _button_entries(registry: er.EntityRegistry, radio_id: str) -> list[er.Regis
         (5, ["01", "03", "05", "07", "08"]),
     ],
 )
-async def test_button_sensors_named_by_button_number(hass, layout, button_numbers):
-    registry = await _set_up_sensors(hass, {"04997264": {"active_buttons": layout}})
+async def test_button_sensors_named_by_button_number(set_up_sensors, layout, button_numbers):
+    registry = await set_up_sensors({"04997264": {"active_buttons": layout}})
 
     entries = _button_entries(registry, "04997264")
 
@@ -88,8 +52,8 @@ async def test_button_sensors_named_by_button_number(hass, layout, button_number
 
 
 @pytest.mark.asyncio
-async def test_new_device_gets_entity_ids_ending_in_button_number(hass):
-    registry = await _set_up_sensors(hass, {"06708DE5": {"active_buttons": 5}})
+async def test_new_device_gets_entity_ids_ending_in_button_number(set_up_sensors):
+    registry = await set_up_sensors({"06708DE5": {"active_buttons": 5}})
 
     entity_ids = [e.entity_id for e in _button_entries(registry, "06708DE5")]
 
@@ -103,7 +67,7 @@ async def test_new_device_gets_entity_ids_ending_in_button_number(hass):
 
 
 @pytest.mark.asyncio
-async def test_existing_entity_id_kept_on_upgrade_and_name_follows_button_number(hass):
+async def test_existing_entity_id_kept_on_upgrade_and_name_follows_button_number(hass, set_up_sensors):
     er.async_get(hass).async_get_or_create(
         "sensor",
         DOMAIN,
@@ -112,7 +76,7 @@ async def test_existing_entity_id_kept_on_upgrade_and_name_follows_button_number
         original_name="Button 2",
     )
 
-    registry = await _set_up_sensors(hass, {"04997264": {"active_buttons": 5}})
+    registry = await set_up_sensors({"04997264": {"active_buttons": 5}})
 
     entity_id = registry.async_get_entity_id("sensor", DOMAIN, "04997264_button_03")
     assert entity_id == "sensor.edisio_ebp8_b_04997264_button_2"

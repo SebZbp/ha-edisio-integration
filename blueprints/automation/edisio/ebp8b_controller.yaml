@@ -1,8 +1,8 @@
 blueprint:
   name: Edisio EBP8-B Switch Controller
   description: >-
-    Map short and long presses of an Edisio EBP8-B switch to actions, one
-    section per Button number (01 to 08). Which Button numbers a switch sends
+    Map short and long presses of an Edisio EBP8-B Device to actions, one
+    section per Button number (01 to 08). Which Button numbers a Device sends
     depends on its Button layout: 1-Button sends 05; 2-Button sends 04 06;
     3-Button sends 02 07 08; 4-Button sends 01 03 07 08; 5-Button sends
     01 03 05 07 08. Leave unused Buttons empty.
@@ -12,11 +12,13 @@ blueprint:
   input:
     edisio_device:
       name: Edisio Device
-      description: The Edisio switch to control.
+      description: The Edisio Device to control.
       selector:
         device:
           filter:
+            # Edisio Devices only; the Dongle (model "Dongle") is excluded.
             - integration: edisio
+              model: EBP8-B
     button_01:
       name: Button 01
       description: Present on the 4-Button and 5-Button layouts.
