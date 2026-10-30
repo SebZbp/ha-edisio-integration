@@ -156,3 +156,22 @@ async def test_init_second_press_while_flow_in_progress_starts_no_flow():
         callback({"id": "02", "button": "03", "action": "toggle"})
 
         hass.config_entries.flow.async_init.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_async_unload_entry_disconnects_hub():
+    from custom_components.edisio import async_unload_entry
+
+    hass = MagicMock(spec=HomeAssistant)
+    hub = MagicMock()
+    hub.disconnect = AsyncMock()
+    hass.data = {DOMAIN: {"test_entry": {"hub": hub}}}
+    hass.config_entries = MagicMock()
+    hass.config_entries.async_unload_platforms = AsyncMock(return_value=True)
+    entry = MagicMock(spec=ConfigEntry)
+    entry.entry_id = "test_entry"
+
+    assert await async_unload_entry(hass, entry) is True
+
+    hub.disconnect.assert_awaited_once()
+    assert "test_entry" not in hass.data[DOMAIN]

@@ -8,15 +8,21 @@ import logging
 
 _LOGGER = logging.getLogger(__name__)
 
+_CLOSE_TIMEOUT = 5
+
 class EdisioProtocol(asyncio.Protocol):
     def __init__(self, packet_callback: Optional[Callable[[str], None]] = None) -> None:
         self.transport: Optional[asyncio.Transport] = None
         self.packet_callback: Optional[Callable[[str], None]] = packet_callback
         self.buffer: bytes = b""
+        self.closed = asyncio.Event()
 
     def connection_made(self, transport: asyncio.BaseTransport) -> None:
         self.transport = transport # type: ignore
         _LOGGER.info("Edisio serial connection established")
+
+    def connection_lost(self, exc: Optional[Exception]) -> None:
+        self.closed.set()
 
     def data_received(self, data: bytes) -> None:
         _LOGGER.debug("Raw data received: %s", binascii.hexlify(data).decode("ascii").upper())
@@ -55,3 +61,18 @@ class EdisioHub:
         )
         self._transport = transport
         self._protocol = protocol
+
+    async def disconnect(self) -> None:
+        """Close the serial transport and drop callbacks so a reload starts clean."""
+        self.callbacks.clear()
+        transport, protocol = self._transport, self._protocol
+        self._transport = None
+        self._protocol = None
+        if transport is None:
+            return
+        transport.close()
+        if protocol is not None:
+            try:
+                await asyncio.wait_for(protocol.closed.wait(), timeout=_CLOSE_TIMEOUT)
+            except asyncio.TimeoutError:
+                _LOGGER.warning("Timed out waiting for serial port %s to close", self.port)
