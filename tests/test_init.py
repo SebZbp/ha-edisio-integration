@@ -175,3 +175,50 @@ async def test_async_unload_entry_disconnects_hub():
 
     hub.disconnect.assert_awaited_once()
     assert "test_entry" not in hass.data[DOMAIN]
+
+
+def _setup_unconfigured(progress=()):
+    hass = MagicMock(spec=HomeAssistant)
+    hass.data = {}
+    hass.bus = MagicMock()
+    hass.config_entries = MagicMock()
+    hass.config_entries.async_forward_entry_setups = AsyncMock()
+    hass.config_entries.flow.async_progress = MagicMock(return_value=list(progress))
+    hass.config_entries.flow.async_init = MagicMock()
+    hass.loop = MagicMock()
+    hass.loop.call_soon_threadsafe = lambda func, *args: func(*args)
+    entry = MagicMock(spec=ConfigEntry)
+    entry.data = {"serial_port": "/dev/ttyUSB0"}
+    entry.options = {}
+    entry.entry_id = "test_entry"
+    return hass, entry
+
+
+async def _press(hass, entry, event):
+    with patch("custom_components.edisio.EdisioHub") as mock_hub_class, \
+         patch("homeassistant.helpers.device_registry.async_get"):
+        hub = MagicMock()
+        hub.connect = AsyncMock()
+        mock_hub_class.return_value = hub
+        await async_setup_entry(hass, entry)
+        hub.register_callback.call_args[0][0](event)
+
+
+@pytest.mark.asyncio
+async def test_unconfigured_device_with_non_ebp8_button_starts_no_flow(caplog):
+    hass, entry = _setup_unconfigured()
+    with caplog.at_level("DEBUG", logger="custom_components.edisio"):
+        await _press(hass, entry, {"id": "70051C01", "button": "00", "action": "toggle"})
+
+    hass.config_entries.flow.async_init.assert_not_called()
+    assert "Ignoring unconfigured device 70051C01" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_repeated_presses_while_flow_pending_are_logged(caplog):
+    hass, entry = _setup_unconfigured(progress=[{"handler": DOMAIN, "context": {"device_id": "02"}}])
+    with caplog.at_level("DEBUG", logger="custom_components.edisio"):
+        await _press(hass, entry, {"id": "02", "button": "03", "action": "toggle"})
+
+    hass.config_entries.flow.async_init.assert_not_called()
+    assert "already in progress for 02" in caplog.text
