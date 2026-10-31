@@ -14,7 +14,7 @@ _LOGGER = logging.getLogger(__name__)
 
 EBP8_BUTTONS = {f"{n:02d}" for n in range(1, 9)}
 
-PLATFORMS: List[str] = ["sensor"]
+PLATFORMS: List[str] = ["sensor", "binary_sensor"]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
@@ -92,7 +92,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         hass.loop.call_soon_threadsafe(async_handle_event, data)
 
+    @callback
+    def handle_connection_change(connected: bool) -> None:
+        async_dispatcher_send(hass, f"{DOMAIN}_connection_{entry.entry_id}")
+
     hub.register_callback(handle_edisio_event)
+    hub.register_connection_callback(handle_connection_change)
     await hub.connect()
     
     # Reload integration when options change
