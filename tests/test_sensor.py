@@ -134,3 +134,11 @@ def test_sensors_register_device_under_stored_name_or_default():
         assert entity.device_info["identifiers"] == {(DOMAIN, "06708E57")}
     for entity in plain:
         assert entity.device_info["name"] == "Edisio EBP8-B 06708E57"
+
+
+def test_device_info_shows_radio_id_as_serial_number():
+    from custom_components.edisio.device import device_info
+
+    info = device_info("06708E57", {"name": "BP Cuisine"}, "dongle")
+
+    assert info["serial_number"] == "06708E57"

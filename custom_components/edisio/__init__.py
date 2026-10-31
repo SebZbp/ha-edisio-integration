@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from typing import Dict, Any, List
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -8,6 +9,10 @@ from homeassistant.helpers import device_registry as dr
 from .const import DOMAIN, CONF_SERIAL_PORT
 from .hub import EdisioHub
 from .press import PressFilter
+
+_LOGGER = logging.getLogger(__name__)
+
+EBP8_BUTTONS = {f"{n:02d}" for n in range(1, 9)}
 
 PLATFORMS: List[str] = ["sensor"]
 
@@ -36,18 +41,29 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         @callback
         def async_handle_event(event_data: Dict[str, Any]) -> None:
             device_id: str = event_data.get("id", "")
+            _LOGGER.debug("Press received: %s", event_data)
             if press_filter.is_repeat(device_id, event_data.get("button", ""), event_data.get("cmd", "")):
+                _LOGGER.debug("Press dropped as repeat of the same physical press: %s", event_data)
                 return
             
             # Check if device is configured in options
             configured_devices = entry.options.get("devices", {})
             if device_id not in configured_devices:
+                if event_data.get("button", "") not in EBP8_BUTTONS:
+                    _LOGGER.debug(
+                        "Ignoring unconfigured device %s: button %r is not an EBP8 button",
+                        device_id, event_data.get("button", ""),
+                    )
+                    return
                 # Check if flow is already in progress
                 in_progress = [
                     flow for flow in hass.config_entries.flow.async_progress()
                     if flow.get("handler") == DOMAIN and flow.get("context", {}).get("device_id") == device_id
                 ]
-                if not in_progress:
+                if in_progress:
+                    _LOGGER.debug("Discovery flow already in progress for %s, press ignored", device_id)
+                else:
+                    _LOGGER.debug("Starting discovery flow for unconfigured device %s", device_id)
                     hass.async_create_task(
                         hass.config_entries.flow.async_init(
                             DOMAIN,
@@ -103,5 +119,6 @@ async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok: bool = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
-        hass.data[DOMAIN].pop(entry.entry_id)
+        data = hass.data[DOMAIN].pop(entry.entry_id)
+        await data["hub"].disconnect()
     return unload_ok
