@@ -1,8 +1,14 @@
+import termios
+
 import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
 from homeassistant.core import HomeAssistant
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigEntryState
+from homeassistant.loader import Integration
+import custom_components
 from custom_components.edisio import async_setup_entry, DOMAIN
+
+PACKET = b"\x6c\x76\x63\x00\x00\x00\x01\x01\x01\x2e\x00\x00\x03\x64\x0d\x0a"
 
 @pytest.mark.asyncio
 async def test_async_setup_entry_connects_hub():
@@ -222,3 +228,79 @@ async def test_repeated_presses_while_flow_pending_are_logged(caplog):
 
     hass.config_entries.flow.async_init.assert_not_called()
     assert "already in progress for 02" in caplog.text
+
+
+@pytest.fixture
+def integration(hass):
+    """The real Edisio integration, as HA's loader resolves it; platforms stay unforwarded."""
+    with patch.object(hass.config_entries, "async_forward_entry_setups", AsyncMock()):
+        yield Integration.resolve_from_root(hass, custom_components, DOMAIN)
+
+
+async def _run_setup(hass, entry, integration):
+    async with entry.setup_lock:
+        await entry.async_setup(hass, integration=integration)
+
+
+@pytest.mark.asyncio
+async def test_setup_is_retried_when_the_dongle_is_missing(hass, add_config_entry, integration, dongle):
+    dongle.plugged_in = False
+    entry = add_config_entry(data={"serial_port": "/dev/ttyUSB0"})
+
+    await _run_setup(hass, entry, integration)
+
+    assert entry.state is ConfigEntryState.SETUP_RETRY
+
+
+@pytest.mark.asyncio
+async def test_failed_setup_leaves_nothing_behind(hass, add_config_entry, integration, dongle):
+    dongle.plugged_in = False
+    entry = add_config_entry(data={"serial_port": "/dev/ttyUSB0"})
+
+    await _run_setup(hass, entry, integration)
+
+    assert entry.entry_id not in hass.data[DOMAIN]
+
+
+@pytest.mark.asyncio
+async def test_a_half_enumerated_dongle_is_retried_too(hass, add_config_entry, integration, dongle):
+    entry = add_config_entry(data={"serial_port": "/dev/ttyUSB0"})
+
+    with patch("serial_asyncio_fast.create_serial_connection", side_effect=termios.error(5, "I/O error")):
+        await _run_setup(hass, entry, integration)
+
+    assert entry.state is ConfigEntryState.SETUP_RETRY
+
+
+@pytest.mark.asyncio
+async def test_presses_reach_automations_once_a_retried_setup_finds_the_dongle(
+    hass, add_config_entry, integration, dongle
+):
+    dongle.plugged_in = False
+    entry = add_config_entry(
+        data={"serial_port": "/dev/ttyUSB0"}, options={"devices": {"00000001": {"active_buttons": 8}}}
+    )
+    await _run_setup(hass, entry, integration)
+
+    dongle.replug()
+    await _run_setup(hass, entry, integration)
+    events = []
+    hass.bus.async_listen("edisio_button_event", lambda event: events.append(event.data))
+    dongle.protocol.data_received(PACKET)
+    await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.LOADED
+    assert events == [{"device_id": "00000001", "button": "01", "type": "short_press"}]
+    await hass.data[DOMAIN][entry.entry_id]["hub"].disconnect()
+
+
+@pytest.mark.asyncio
+async def test_an_entry_waiting_for_the_dongle_can_be_unloaded(hass, add_config_entry, integration, dongle):
+    dongle.plugged_in = False
+    entry = add_config_entry(data={"serial_port": "/dev/ttyUSB0"})
+    await _run_setup(hass, entry, integration)
+
+    async with entry.setup_lock:
+        assert await entry.async_unload(hass, integration=integration) is True
+
+    assert entry.state is ConfigEntryState.NOT_LOADED

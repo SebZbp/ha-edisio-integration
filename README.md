@@ -101,7 +101,7 @@ trigger:
 
 Upon discovering a new switch, the integration automatically registers a Battery sensor tied to that Device ID. The battery level is updated dynamically every time the switch is pressed.
 
-The Edisio Dongle device has a **Connection** sensor: it turns off when the Dongle is unplugged or its serial port fails, and back on once the integration has reopened the port. Reopening is automatic, retrying every 1 second at first and backing off to once a minute, so no reload is needed. Automations can trigger on this sensor to warn you of an outage; button presses made during one are lost.
+The Edisio Dongle device has a **Connection** sensor: it turns off when the Dongle is unplugged or its serial port fails, and back on once the integration has reopened the port. Reopening is automatic, retrying every 1 second at first and backing off to once a minute, so no reload is needed. If the Dongle is already missing when Home Assistant starts, Home Assistant keeps retrying the integration's setup and the Connection sensor stays unavailable until the port opens. Automations can trigger on this sensor to warn you of an outage; button presses made during one are lost.
 
 ---
 
