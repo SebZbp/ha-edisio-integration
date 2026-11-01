@@ -40,6 +40,14 @@ _Avoid_: Button, pairing button (its purpose is unconfirmed)
 The 8-hex-digit identifier a Device sends in every packet (e.g. `06708E57`); the byte-reversed hex of the decimal ID shown by RFPlayer.
 _Avoid_: HA device ID (a different, HA-internal identifier), serial
 
+**Discovery card**:
+The prompt Home Assistant shows when a Device that is not configured transmits, offering to add it or ignore it.
+_Avoid_: Notification, pairing request
+
+**Ignored Device**:
+A Device the user chose to ignore from its Discovery card. It raises no card, has no sensors and reports nothing until the user stops ignoring it or adds it by hand.
+_Avoid_: Blocked device, hidden device
+
 **Button**:
 One of the keys of a Wall plate, identified by its Button number.
 _Avoid_: Key, channel
