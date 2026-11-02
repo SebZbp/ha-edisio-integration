@@ -93,10 +93,7 @@ class EdisioConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if entries:
                 entry = entries[0]
                 devices = dict(entry.options.get("devices", {}))
-                device_cfg: Dict[str, Any] = {CONF_DEVICE_MODEL: OPENING_SENSOR.key}
-                name = (user_input.get(CONF_NAME) or "").strip()
-                if name:
-                    device_cfg[CONF_NAME] = name
+                device_cfg = build_device_cfg({**user_input, CONF_DEVICE_MODEL: OPENING_SENSOR.key})
                 devices[self._device_id] = device_cfg
                 area_id = user_input.get(CONF_AREA_ID)
                 if area_id:

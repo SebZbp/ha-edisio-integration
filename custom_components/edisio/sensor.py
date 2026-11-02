@@ -41,13 +41,14 @@ async def async_setup_entry(
 
 def _device_sensors(device_id: str, device_cfg: Dict[str, Any], entry_id: str) -> List[SensorEntity]:
     """The Battery sensor, plus one Button sensor per Button number of a Wall plate's Button layout."""
-    if not device_model(device_cfg).has_buttons:
-        return [EdisioBatterySensor(device_id, entry_id, device_cfg)]
-    button_layout = device_cfg.get("active_buttons", DEFAULT_ACTIVE_BUTTONS)
-    return [EdisioBatterySensor(device_id, entry_id, device_cfg)] + [
-        EdisioButtonSensor(device_id, button_number, entry_id, device_cfg)
-        for button_number in BUTTON_LAYOUTS.get(button_layout, [])
-    ]
+    sensors: List[SensorEntity] = [EdisioBatterySensor(device_id, entry_id, device_cfg)]
+    if device_model(device_cfg).has_buttons:
+        button_layout = device_cfg.get("active_buttons", DEFAULT_ACTIVE_BUTTONS)
+        sensors += [
+            EdisioButtonSensor(device_id, button_number, entry_id, device_cfg)
+            for button_number in BUTTON_LAYOUTS.get(button_layout, [])
+        ]
+    return sensors
 
 class EdisioBatterySensor(SensorEntity, RestoreEntity):
     _attr_has_entity_name: bool = True
@@ -71,8 +72,8 @@ class EdisioBatterySensor(SensorEntity, RestoreEntity):
         # Restored first, so the next packet overrides it; never reported stays unknown.
         if (last := await self.async_get_last_state()) is not None:
             try:
-                self._attr_native_value = min(100, int(last.state))
-            except ValueError:
+                self._attr_native_value = min(100, int(float(last.state)))
+            except (ValueError, OverflowError):
                 pass
         self.async_on_remove(
             async_dispatcher_connect(

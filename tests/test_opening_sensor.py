@@ -191,6 +191,12 @@ async def test_battery_level_is_restored_for_every_device(hass, restart, unique_
         assert _state(hass, "sensor", unique_id).state == "42"
 
 
+@pytest.mark.parametrize("stored, expected", [("87.0", "87"), ("42.9", "42"), ("250.0", "100"), ("250", "100")])
+async def test_float_like_stored_battery_is_restored_capped_at_100(hass, restart, stored, expected):
+    async with restart({("sensor", f"{SENSOR}_battery"): stored}):
+        assert _state(hass, "sensor", f"{SENSOR}_battery").state == expected
+
+
 async def test_unusable_stored_battery_stays_unknown(hass, restart):
     async with restart({("sensor", f"{SENSOR}_battery"): "unavailable"}):
         assert _state(hass, "sensor", f"{SENSOR}_battery").state == "unknown"

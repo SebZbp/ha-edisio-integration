@@ -84,13 +84,17 @@ class EditDeviceSteps:
     def _edit_schema(self, radio_id: str) -> vol.Schema:
         cfg = self.config_entry.options["devices"][radio_id]
         device = self._registry_device(radio_id)
-        layout = {}
-        if device_model(cfg).has_buttons:
-            layout[vol.Required(
-                CONF_ACTIVE_BUTTONS, default=cfg.get(CONF_ACTIVE_BUTTONS, DEFAULT_ACTIVE_BUTTONS)
-            )] = vol.All(vol.Coerce(int), vol.Range(min=1, max=5))
         return vol.Schema({
-            **layout,
+            **(
+                {
+                    vol.Required(
+                        CONF_ACTIVE_BUTTONS,
+                        default=cfg.get(CONF_ACTIVE_BUTTONS, DEFAULT_ACTIVE_BUTTONS),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=1, max=5))
+                }
+                if device_model(cfg).has_buttons
+                else {}
+            ),
             vol.Optional(CONF_NAME, description={"suggested_value": cfg.get(CONF_NAME, "")}): str,
             vol.Optional(
                 CONF_AREA_ID,
