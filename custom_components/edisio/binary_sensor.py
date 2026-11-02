@@ -2,9 +2,11 @@ from typing import Any, Dict, List, Optional
 
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import DOMAIN
 from .device import device_info
@@ -40,7 +42,7 @@ def _device_binary_sensors(device_id: str, device_cfg: Dict[str, Any], entry_id:
     return [EdisioOpeningSensor(device_id, entry_id, device_cfg)]
 
 
-class EdisioOpeningSensor(BinarySensorEntity):
+class EdisioOpeningSensor(BinarySensorEntity, RestoreEntity):
     """On means Open, off means Closed, unknown until the first report."""
 
     _attr_has_entity_name: bool = True
@@ -59,6 +61,10 @@ class EdisioOpeningSensor(BinarySensorEntity):
         return device_info(self._device_id, self._device_cfg, self._entry_id)
 
     async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        # Restored first, so the next packet overrides it; never reported stays unknown.
+        if (last := await self.async_get_last_state()) is not None and last.state in (STATE_ON, STATE_OFF):
+            self._attr_is_on = last.state == STATE_ON
         self.async_on_remove(
             async_dispatcher_connect(self.hass, f"{DOMAIN}_update_{self._device_id}", self._update_state)
         )
