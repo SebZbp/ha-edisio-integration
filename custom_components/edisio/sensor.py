@@ -5,6 +5,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.const import PERCENTAGE
+from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from .const import DOMAIN, BUTTON_LAYOUTS, DEFAULT_ACTIVE_BUTTONS
 from .device import device_info
@@ -48,7 +49,7 @@ def _device_sensors(device_id: str, device_cfg: Dict[str, Any], entry_id: str) -
         for button_number in BUTTON_LAYOUTS.get(button_layout, [])
     ]
 
-class EdisioBatterySensor(SensorEntity):
+class EdisioBatterySensor(SensorEntity, RestoreEntity):
     _attr_has_entity_name: bool = True
     _attr_device_class = SensorDeviceClass.BATTERY
     _attr_native_unit_of_measurement: str = PERCENTAGE
@@ -66,6 +67,13 @@ class EdisioBatterySensor(SensorEntity):
         return device_info(self._device_id, self._device_cfg, self._entry_id)
 
     async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        # Restored first, so the next packet overrides it; never reported stays unknown.
+        if (last := await self.async_get_last_state()) is not None:
+            try:
+                self._attr_native_value = min(100, int(last.state))
+            except ValueError:
+                pass
         self.async_on_remove(
             async_dispatcher_connect(
                 self.hass, 

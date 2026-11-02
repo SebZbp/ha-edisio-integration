@@ -1,10 +1,14 @@
 """An Opening sensor shows Open/Closed and Battery, replaying frames recorded from Device 91107A5D."""
+from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import pytest_asyncio
+from homeassistant.core import State
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import restore_state
+from homeassistant.util import dt as dt_util
 
 from custom_components.edisio import async_setup_entry, binary_sensor, sensor
 from custom_components.edisio.const import DOMAIN
@@ -121,3 +125,78 @@ async def test_wall_plate_frames_behave_as_before(hass, replay):
     assert replay.events == [{"device_id": PLATE, "button": "05", "type": "short_press"}]
     device = dr.async_get(hass).async_get_device(identifiers={(DOMAIN, PLATE)})
     assert device.model == "EBP8"
+
+
+# --- Restart: the last known state and Battery level come back -------------------------------
+
+@pytest_asyncio.fixture
+async def restart(hass, add_config_entry, set_up_platform):
+    """Set up the integration as after a restart; ``stored`` maps (domain, unique_id) to the last state."""
+
+    @asynccontextmanager
+    async def _restart(stored: dict):
+        entry = add_config_entry(
+            data={"serial_port": "/dev/ttyUSB0"},
+            options={"devices": {
+                SENSOR: {"device_model": "opening_sensor"},
+                PLATE: {"active_buttons": 5},
+            }},
+        )
+        registry = er.async_get(hass)
+        restore = restore_state.async_get(hass)
+        for (domain, unique_id), value in stored.items():
+            entity_id = registry.async_get_or_create(domain, DOMAIN, unique_id).entity_id
+            restore.last_states[entity_id] = restore_state.StoredState(State(entity_id, value), None, dt_util.utcnow())
+
+        with patch("custom_components.edisio.EdisioHub") as hub_class, \
+             patch.object(hass.config_entries, "async_forward_entry_setups", AsyncMock()):
+            hub = MagicMock()
+            hub.connect = AsyncMock()
+            hub_class.return_value = hub
+            await async_setup_entry(hass, entry)
+            await set_up_platform(entry, sensor, "sensor")
+            await set_up_platform(entry, binary_sensor, "binary_sensor")
+            callback = hub.register_callback.call_args[0][0]
+
+            async def feed(frame: str) -> None:
+                callback(decode_packet(frame))
+                await hass.async_block_till_done()
+
+            yield feed
+
+    return _restart
+
+
+@pytest.mark.parametrize("last, expected", [("on", "on"), ("off", "off"), ("unknown", "unknown"), ("unavailable", "unknown")])
+async def test_opening_state_is_restored(hass, restart, last, expected):
+    async with restart({("binary_sensor", f"{SENSOR}_opening"): last}):
+        assert _state(hass, "binary_sensor", f"{SENSOR}_opening").state == expected
+
+
+async def test_next_packet_overrides_restored_opening_state(hass, restart):
+    async with restart({("binary_sensor", f"{SENSOR}_opening"): "on"}) as feed:
+        await feed(CLOSED_01)
+        assert _state(hass, "binary_sensor", f"{SENSOR}_opening").state == "off"
+
+
+async def test_sensor_without_history_stays_unknown(hass, restart):
+    async with restart({}):
+        assert _state(hass, "binary_sensor", f"{SENSOR}_opening").state == "unknown"
+        assert _state(hass, "sensor", f"{SENSOR}_battery").state == "unknown"
+
+
+@pytest.mark.parametrize("unique_id", [f"{SENSOR}_battery", f"{PLATE}_battery"])
+async def test_battery_level_is_restored_for_every_device(hass, restart, unique_id):
+    async with restart({("sensor", unique_id): "42"}):
+        assert _state(hass, "sensor", unique_id).state == "42"
+
+
+async def test_unusable_stored_battery_stays_unknown(hass, restart):
+    async with restart({("sensor", f"{SENSOR}_battery"): "unavailable"}):
+        assert _state(hass, "sensor", f"{SENSOR}_battery").state == "unknown"
+
+
+async def test_next_packet_overrides_restored_battery(hass, restart):
+    async with restart({("sensor", f"{SENSOR}_battery"): "42"}) as feed:
+        await feed(SENSOR_BUTTON_2F)
+        assert _state(hass, "sensor", f"{SENSOR}_battery").state == "60"
