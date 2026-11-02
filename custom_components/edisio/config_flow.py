@@ -10,6 +10,7 @@ from homeassistant.helpers import selector
 
 from .const import DOMAIN, CONF_SERIAL_PORT, CONF_ACTIVE_BUTTONS, DEFAULT_ACTIVE_BUTTONS, CONF_NAME, CONF_AREA_ID
 from .device import apply_area, build_device_cfg
+from .models import OPENING_SENSOR, CONF_DEVICE_MODEL
 from .options_flow import EdisioOptionsFlow
 
 _LOGGER = logging.getLogger(__name__)
@@ -77,9 +78,45 @@ class EdisioConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_device(self, discovery_info: Dict[str, Any]) -> FlowResult:
         self._device_id = discovery_info["device_id"]
         self._button = discovery_info.get("button", "")
+        self._model_code = discovery_info.get("model_code", "")
         await self.async_set_unique_id(f"edisio_{self._device_id}")
         self._abort_if_unique_id_configured()
+        if self._model_code == OPENING_SENSOR.model_code:
+            return await self.async_step_opening_sensor_confirm()
         return await self.async_step_device_confirm()
+
+    async def async_step_opening_sensor_confirm(
+        self, user_input: Optional[Dict[str, Any]] = None
+    ) -> FlowResult:
+        if user_input is not None:
+            entries = self._async_current_entries()
+            if entries:
+                entry = entries[0]
+                devices = dict(entry.options.get("devices", {}))
+                device_cfg: Dict[str, Any] = {CONF_DEVICE_MODEL: OPENING_SENSOR.key}
+                name = (user_input.get(CONF_NAME) or "").strip()
+                if name:
+                    device_cfg[CONF_NAME] = name
+                devices[self._device_id] = device_cfg
+                area_id = user_input.get(CONF_AREA_ID)
+                if area_id:
+                    apply_area(self.hass, entry.entry_id, self._device_id, device_cfg, area_id)
+                new_options = dict(entry.options)
+                new_options["devices"] = devices
+                self.hass.config_entries.async_update_entry(entry, options=new_options)
+            return self.async_abort(
+                reason="device_configured",
+                description_placeholders={"device_id": self._device_id}
+            )
+
+        return self.async_show_form(
+            step_id="opening_sensor_confirm",
+            data_schema=vol.Schema({
+                vol.Optional(CONF_NAME): str,
+                vol.Optional(CONF_AREA_ID): selector.AreaSelector(),
+            }),
+            description_placeholders={"device_id": self._device_id},
+        )
 
     async def async_step_device_confirm(
         self, user_input: Optional[Dict[str, Any]] = None

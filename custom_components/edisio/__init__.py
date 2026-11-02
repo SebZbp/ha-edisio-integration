@@ -9,7 +9,7 @@ from homeassistant.helpers import device_registry as dr
 from .const import DOMAIN, CONF_SERIAL_PORT
 from .hub import EdisioHub
 from .press import PressFilter
-from .models import device_model
+from .models import device_model, OPENING_SENSOR
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -50,7 +50,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             # Check if device is configured in options
             configured_devices = entry.options.get("devices", {})
             if device_id not in configured_devices:
-                if event_data.get("button", "") not in EBP8_BUTTONS:
+                model_code: str = event_data.get("mid", "")
+                if model_code != OPENING_SENSOR.model_code and event_data.get("button", "") not in EBP8_BUTTONS:
                     _LOGGER.debug(
                         "Ignoring unconfigured device %s: button %r is not an EBP8 button",
                         device_id, event_data.get("button", ""),
@@ -69,7 +70,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                         hass.config_entries.flow.async_init(
                             DOMAIN,
                             context={"source": "device", "device_id": device_id},
-                            data={"device_id": device_id, "button": event_data.get("button", "")}
+                            data={"device_id": device_id, "button": event_data.get("button", ""), "model_code": model_code}
                         )
                     )
                 return
