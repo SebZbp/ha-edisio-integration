@@ -126,7 +126,7 @@ async def test_init_triggers_discovery_for_unconfigured_device():
         hass.async_create_task.assert_called_once()
         hass.config_entries.flow.async_init.assert_called_once_with(
             DOMAIN,
-            context={"source": "device", "device_id": "02"},
+            context={"source": "integration_discovery", "device_id": "02"},
             data={"device_id": "02", "button": "01", "model_code": ""}
         )
 
@@ -238,7 +238,7 @@ async def test_model_code_09_from_unconfigured_radio_id_starts_opening_sensor_fl
 
     hass.config_entries.flow.async_init.assert_called_once_with(
         DOMAIN,
-        context={"source": "device", "device_id": "91107A5D"},
+        context={"source": "integration_discovery", "device_id": "91107A5D"},
         data={"device_id": "91107A5D", "button": button, "model_code": "09"},
     )
 
@@ -250,7 +250,7 @@ async def test_wall_plate_model_code_is_passed_to_the_flow():
 
     hass.config_entries.flow.async_init.assert_called_once_with(
         DOMAIN,
-        context={"source": "device", "device_id": "06708E57"},
+        context={"source": "integration_discovery", "device_id": "06708E57"},
         data={"device_id": "06708E57", "button": "05", "model_code": "01"},
     )
 

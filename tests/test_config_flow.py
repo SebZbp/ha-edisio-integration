@@ -10,6 +10,7 @@ from custom_components.edisio.device import device_name
 async def test_config_flow_device_steps():
     # Instantiate flow
     flow = EdisioConfigFlow()
+    flow.context = {}  # set by HA's flow manager in a real flow
     flow.hass = MagicMock(spec=HomeAssistant)
     
     # Mock current entries check
@@ -18,7 +19,7 @@ async def test_config_flow_device_steps():
     flow._abort_if_unique_id_configured = MagicMock()
     
     # 1. Test async_step_device
-    result = await flow.async_step_device({"device_id": "01234567", "button": "05"})
+    result = await flow.async_step_integration_discovery({"device_id": "01234567", "button": "05"})
     
     flow.async_set_unique_id.assert_called_once_with("edisio_01234567")
     flow._abort_if_unique_id_configured.assert_called_once()
@@ -49,6 +50,7 @@ async def test_config_flow_device_steps():
 
 def _device_flow(entry_options=None):
     flow = EdisioConfigFlow()
+    flow.context = {}  # set by HA's flow manager in a real flow
     flow.hass = MagicMock(spec=HomeAssistant)
     flow.async_set_unique_id = AsyncMock()
     flow._abort_if_unique_id_configured = MagicMock()
@@ -60,7 +62,7 @@ def _device_flow(entry_options=None):
 
 
 async def _submit(flow, user_input):
-    await flow.async_step_device({"device_id": "06708E57", "button": "05"})
+    await flow.async_step_integration_discovery({"device_id": "06708E57", "button": "05"})
     with patch("custom_components.edisio.device.dr.async_get") as mock_get:
         registry = mock_get.return_value
         await flow.async_step_device_confirm(user_input=user_input)
@@ -70,7 +72,7 @@ async def _submit(flow, user_input):
 @pytest.mark.asyncio
 async def test_form_offers_optional_name_and_area_next_to_layout():
     flow, _ = _device_flow()
-    result = await flow.async_step_device({"device_id": "06708E57", "button": "05"})
+    result = await flow.async_step_integration_discovery({"device_id": "06708E57", "button": "05"})
     keys = {str(k): k for k in result["data_schema"].schema}
     assert set(keys) == {"active_buttons", "name", "area_id"}
     assert isinstance(keys["name"], vol.Optional)
@@ -135,7 +137,7 @@ def test_device_name_is_stored_name_or_default():
 @pytest.mark.asyncio
 async def test_opening_sensor_card_asks_only_name_and_area():
     flow, _ = _device_flow()
-    result = await flow.async_step_device({"device_id": "91107A5D", "button": "01", "model_code": "09"})
+    result = await flow.async_step_integration_discovery({"device_id": "91107A5D", "button": "01", "model_code": "09"})
     assert result["type"] == "form"
     assert result["step_id"] == "opening_sensor_confirm"
     assert {str(k) for k in result["data_schema"].schema} == {"name", "area_id"}
@@ -145,7 +147,7 @@ async def test_opening_sensor_card_asks_only_name_and_area():
 @pytest.mark.asyncio
 async def test_submitting_opening_sensor_card_stores_the_model():
     flow, entry = _device_flow()
-    await flow.async_step_device({"device_id": "91107A5D", "button": "01", "model_code": "09"})
+    await flow.async_step_integration_discovery({"device_id": "91107A5D", "button": "01", "model_code": "09"})
     with patch("custom_components.edisio.device.dr.async_get"):
         result = await flow.async_step_opening_sensor_confirm(user_input={"name": " Porte "})
     assert result["reason"] == "device_configured"
@@ -157,7 +159,7 @@ async def test_submitting_opening_sensor_card_stores_the_model():
 @pytest.mark.asyncio
 async def test_opening_sensor_card_without_name_stores_only_the_model_and_applies_area():
     flow, entry = _device_flow()
-    await flow.async_step_device({"device_id": "91107A5D", "button": "2F", "model_code": "09"})
+    await flow.async_step_integration_discovery({"device_id": "91107A5D", "button": "2F", "model_code": "09"})
     with patch("custom_components.edisio.device.dr.async_get") as mock_get:
         await flow.async_step_opening_sensor_confirm(user_input={"area_id": "hall"})
     flow.hass.config_entries.async_update_entry.assert_called_once_with(
@@ -172,5 +174,5 @@ async def test_opening_sensor_card_without_name_stores_only_the_model_and_applie
 @pytest.mark.parametrize("model_code", ["01", "", "02"])
 async def test_other_model_codes_still_get_the_wall_plate_card(model_code):
     flow, _ = _device_flow()
-    result = await flow.async_step_device({"device_id": "06708E57", "button": "05", "model_code": model_code})
+    result = await flow.async_step_integration_discovery({"device_id": "06708E57", "button": "05", "model_code": model_code})
     assert result["step_id"] == "device_confirm"

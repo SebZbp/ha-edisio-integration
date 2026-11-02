@@ -1,5 +1,6 @@
 {
   "config": {
+    "flow_title": "{name}",
     "abort": {
       "single_instance_allowed": "Only a single configuration of Edisio is allowed.",
       "device_configured": "Edisio device {device_id} configured successfully."

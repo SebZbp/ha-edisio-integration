@@ -1,12 +1,24 @@
 from typing import Any, Dict, Optional
 
 import voluptuous as vol
+from homeassistant.config_entries import SOURCE_IGNORE, ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import selector
 
 from .models import CONF_DEVICE_MODEL, DEVICE_MODELS, WALL_PLATE, device_model
 from .const import DOMAIN, CONF_ACTIVE_BUTTONS, CONF_NAME, CONF_RADIO_ID, DEFAULT_ACTIVE_BUTTONS
+
+
+def discovery_unique_id(device_id: str) -> str:
+    """The unique ID of a Device's discovery flow, and of its ignored entry once ignored."""
+    return f"edisio_{device_id}"
+
+
+def ignored_entry(hass: HomeAssistant, device_id: str) -> Optional[ConfigEntry]:
+    """HA's ignored entry for an Ignored Device, or None when the Device is not ignored."""
+    entry = hass.config_entries.async_entry_for_domain_unique_id(DOMAIN, discovery_unique_id(device_id))
+    return entry if entry is not None and entry.source == SOURCE_IGNORE else None
 
 
 def device_name(device_id: str, device_cfg: Dict[str, Any]) -> str:
