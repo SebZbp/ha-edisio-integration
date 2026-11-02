@@ -5,7 +5,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import selector
 
-from .models import device_model
+from .models import CONF_DEVICE_MODEL, DEVICE_MODELS, WALL_PLATE, device_model
 from .const import DOMAIN, CONF_ACTIVE_BUTTONS, CONF_NAME, CONF_RADIO_ID, DEFAULT_ACTIVE_BUTTONS
 
 
@@ -50,9 +50,16 @@ def build_device_cfg(
     layout is the default when the submission has none, and an empty name clears the stored name.
     """
     cfg = dict(current or {})
-    cfg[CONF_ACTIVE_BUTTONS] = user_input.get(
-        CONF_ACTIVE_BUTTONS, cfg.get(CONF_ACTIVE_BUTTONS, DEFAULT_ACTIVE_BUTTONS)
-    )
+    chosen = DEVICE_MODELS.get(user_input.get(CONF_DEVICE_MODEL))
+    if chosen is not None and chosen is not WALL_PLATE:
+        cfg[CONF_DEVICE_MODEL] = chosen.key  # a Wall plate stores no model: none means Wall plate
+    # Only a Wall plate has a Button layout.
+    if device_model(cfg).has_buttons:
+        cfg[CONF_ACTIVE_BUTTONS] = user_input.get(
+            CONF_ACTIVE_BUTTONS, cfg.get(CONF_ACTIVE_BUTTONS, DEFAULT_ACTIVE_BUTTONS)
+        )
+    else:
+        cfg.pop(CONF_ACTIVE_BUTTONS, None)
     name = (user_input.get(CONF_NAME) or "").strip()
     if name:
         cfg[CONF_NAME] = name

@@ -27,6 +27,7 @@ from .const import (
     DOMAIN,
 )
 from .device import build_device_cfg, device_name, device_picker_schema
+from .models import device_model
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -83,10 +84,13 @@ class EditDeviceSteps:
     def _edit_schema(self, radio_id: str) -> vol.Schema:
         cfg = self.config_entry.options["devices"][radio_id]
         device = self._registry_device(radio_id)
-        return vol.Schema({
-            vol.Required(
+        layout = {}
+        if device_model(cfg).has_buttons:
+            layout[vol.Required(
                 CONF_ACTIVE_BUTTONS, default=cfg.get(CONF_ACTIVE_BUTTONS, DEFAULT_ACTIVE_BUTTONS)
-            ): vol.All(vol.Coerce(int), vol.Range(min=1, max=5)),
+            )] = vol.All(vol.Coerce(int), vol.Range(min=1, max=5))
+        return vol.Schema({
+            **layout,
             vol.Optional(CONF_NAME, description={"suggested_value": cfg.get(CONF_NAME, "")}): str,
             vol.Optional(
                 CONF_AREA_ID,
@@ -108,7 +112,8 @@ class EditDeviceSteps:
         before the first registry change.
         """
         cfg = build_device_cfg(user_input, self.config_entry.options["devices"][radio_id])
-        self._remove_dropped_buttons(radio_id, cfg[CONF_ACTIVE_BUTTONS])
+        if device_model(cfg).has_buttons:
+            self._remove_dropped_buttons(radio_id, cfg[CONF_ACTIVE_BUTTONS])
 
         device = self._registry_device(radio_id)
         if device is not None:
@@ -144,8 +149,8 @@ class EditDeviceSteps:
         for entity in er.async_entries_for_config_entry(registry, self.config_entry.entry_id):
             if not (entity.unique_id or "").startswith(prefix):
                 continue
-            # "<radio id>_battery" -> "battery"; "<radio id>_button_03" -> "button_03"
-            target = f"sensor.{slug}_{entity.unique_id[len(prefix):]}"
+            # "<radio id>_battery" -> "battery"; "<radio id>_opening" -> "opening"; "<radio id>_button_03" -> "button_03"
+            target = f"{entity.domain}.{slug}_{entity.unique_id[len(prefix):]}"
             if target == entity.entity_id:
                 continue
             if registry.async_get(target) is not None:
