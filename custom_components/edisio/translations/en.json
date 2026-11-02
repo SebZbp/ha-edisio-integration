@@ -23,6 +23,14 @@
           "name": "Name (optional, default: Edisio EBP8-B <Radio ID>)",
           "area_id": "Area (optional)"
         }
+      },
+      "opening_sensor_confirm": {
+        "title": "Configure Opening sensor {device_id}",
+        "description": "Opening sensor {device_id} was detected. Optionally name it (e.g. Front door) and choose its area.",
+        "data": {
+          "name": "Name (optional, default: Edisio Opening sensor <Radio ID>)",
+          "area_id": "Area (optional)"
+        }
       }
     }
   },
