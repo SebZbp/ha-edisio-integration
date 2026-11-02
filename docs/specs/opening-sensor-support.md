@@ -1,6 +1,6 @@
 # Opening sensor support
 
-Tracker: beads epic `edisio-voy` (label `ready-for-agent`, blocked on the overnight log check `edisio-avx`)
+Tracker: beads epic `edisio-voy` (label `ready-for-agent`)
 
 ## Problem Statement
 
@@ -102,10 +102,17 @@ Recorded on 2026-10-31 from one EDS-100, Radio ID `91107A5D`, with a new battery
 - The edit form hides the Button layout for an Opening sensor.
 - The entity ID update must use each entity's own domain. It currently assumes `sensor`, which would produce a wrong target for the `binary_sensor`.
 
-### To be decided from the overnight log (`edisio-avx`)
+### Heartbeat
 
-- Whether the sensor sends a heartbeat. If it does not, there is no availability or staleness handling, and the entity relies on restore alone.
-- If it does, whether its frames carry the state, and whether they should feed a stale or unavailable state. Close this section in this spec either way.
+No heartbeat was seen, so there is no availability or staleness handling, and the entity relies on restore alone. It never becomes unavailable or stale because the sensor is quiet.
+
+Evidence from the idle check on 2026-11-01 (`edisio-avx`), with `91107A5D` left untouched after its last frame at 20:48:15 on 2026-10-31:
+
+- The log holds no frame from `91107A5D` between 01:05:15, where the retained log begins, and 08:22:00.
+- HA restarted five times between 21:09 and 23:02, which cleared the discovery card. Any frame after the last start at 23:02:05 would have raised a new card, and none existed at 08:21. This extends the silence to about 9 hours 20 minutes.
+- The radio path was working: the same log holds 25 Wall plate frames, at 03:07 and from 07:00 onward.
+
+Nothing covers 20:48:15 to 23:02:05, and a heartbeat with a period longer than about 9 hours is not ruled out. Revisit this decision if a later capture shows one.
 
 ## Testing Decisions
 
@@ -132,5 +139,5 @@ Recorded on 2026-10-31 from one EDS-100, Radio ID `91107A5D`, with a new battery
 - The Jeedom plugin's model `09` is the source for the EOS-200 expectation. Its definition uses the EOS-200's battery and documentation. It is GPL-2.0, so use it for protocol facts only and copy no code.
 - The catalogue says the EDS-100's signal is configurable as NO or NF and contradicts itself on whether closing is reported. The recorded behaviour above takes precedence.
 - The byte after the battery is `05` on the sensor and `01` on plates. Its meaning is unknown and nothing depends on it.
-- HA currently runs a `[DEBUG-1h5]` diagnostic build. Keep it until the overnight check is done, and do not submit the pending card for `91107A5D`; submitting it would store the sensor as a Wall plate.
+- Until the feature build is installed, do not submit any discovery card for `91107A5D`; submitting it would store the sensor as a Wall plate. No card is pending as of 2026-11-01, but any frame from the sensor raises a new one.
 - Domain terms are defined in `CONTEXT.md`.

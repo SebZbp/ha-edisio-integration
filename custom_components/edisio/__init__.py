@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from typing import Dict, Any, List
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import SOURCE_INTEGRATION_DISCOVERY, ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.dispatcher import async_dispatcher_send
@@ -10,6 +10,8 @@ from homeassistant.helpers import device_registry as dr
 from .const import DOMAIN, CONF_SERIAL_PORT
 from .hub import EdisioHub
 from .press import PressFilter
+from .models import device_model, OPENING_SENSOR
+from .device import ignored_entry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -50,7 +52,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             # Check if device is configured in options
             configured_devices = entry.options.get("devices", {})
             if device_id not in configured_devices:
-                if event_data.get("button", "") not in EBP8_BUTTONS:
+                # Read live, so that Stop ignoring takes effect without a restart
+                if ignored_entry(hass, device_id) is not None:
+                    _LOGGER.debug("Dropping packet from Ignored Device %s", device_id)
+                    return
+                model_code: str = event_data.get("mid", "")
+                if model_code != OPENING_SENSOR.model_code and event_data.get("button", "") not in EBP8_BUTTONS:
                     _LOGGER.debug(
                         "Ignoring unconfigured device %s: button %r is not an EBP8 button",
                         device_id, event_data.get("button", ""),
@@ -68,21 +75,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     hass.async_create_task(
                         hass.config_entries.flow.async_init(
                             DOMAIN,
-                            context={"source": "device", "device_id": device_id},
-                            data={"device_id": device_id, "button": event_data.get("button", "")}
+                            context={"source": SOURCE_INTEGRATION_DISCOVERY, "device_id": device_id},
+                            data={"device_id": device_id, "button": event_data.get("button", ""), "model_code": model_code}
                         )
                     )
                 return
 
-            # Fire edisio_button_event for automation triggers
-            action: str = event_data.get("action", "")
-            press_type: str = "long_press" if action in ["up", "down"] else "short_press"
-            event_payload: Dict[str, str] = {
-                "device_id": device_id,
-                "button": event_data.get("button", ""),
-                "type": press_type
-            }
-            hass.bus.async_fire("edisio_button_event", event_payload)
+            # Only a Wall plate fires edisio_button_event for automation triggers
+            if device_model(configured_devices[device_id]).has_buttons:
+                action: str = event_data.get("action", "")
+                press_type: str = "long_press" if action in ["up", "down"] else "short_press"
+                event_payload: Dict[str, str] = {
+                    "device_id": device_id,
+                    "button": event_data.get("button", ""),
+                    "type": press_type
+                }
+                hass.bus.async_fire("edisio_button_event", event_payload)
             
             # Handle device discovery and sensor updates
             if device_id not in hass.data[DOMAIN][entry.entry_id]["devices"]:

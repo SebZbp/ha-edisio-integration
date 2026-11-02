@@ -1,16 +1,29 @@
 from typing import Any, Dict, Optional
 
 import voluptuous as vol
+from homeassistant.config_entries import SOURCE_IGNORE, ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import selector
 
+from .models import CONF_DEVICE_MODEL, DEVICE_MODELS, WALL_PLATE, device_model
 from .const import DOMAIN, CONF_ACTIVE_BUTTONS, CONF_NAME, CONF_RADIO_ID, DEFAULT_ACTIVE_BUTTONS
 
 
+def discovery_unique_id(device_id: str) -> str:
+    """The unique ID of a Device's discovery flow, and of its ignored entry once ignored."""
+    return f"edisio_{device_id}"
+
+
+def ignored_entry(hass: HomeAssistant, device_id: str) -> Optional[ConfigEntry]:
+    """HA's ignored entry for an Ignored Device, or None when the Device is not ignored."""
+    entry = hass.config_entries.async_entry_for_domain_unique_id(DOMAIN, discovery_unique_id(device_id))
+    return entry if entry is not None and entry.source == SOURCE_IGNORE else None
+
+
 def device_name(device_id: str, device_cfg: Dict[str, Any]) -> str:
-    """The stored name of a Device, or "Edisio EBP8-B <Radio ID>" when none was given."""
-    return device_cfg.get(CONF_NAME) or f"Edisio EBP8-B {device_id}"
+    """The stored name of a Device, or "<model prefix> <Radio ID>" when none was given."""
+    return device_cfg.get(CONF_NAME) or f"{device_model(device_cfg).default_name_prefix} {device_id}"
 
 
 def device_info(device_id: str, device_cfg: Dict[str, Any], entry_id: str) -> Dict[str, Any]:
@@ -19,7 +32,7 @@ def device_info(device_id: str, device_cfg: Dict[str, Any], entry_id: str) -> Di
         "identifiers": {(DOMAIN, device_id)},
         "name": device_name(device_id, device_cfg),
         "manufacturer": "Edisio",
-        "model": "EBP8",
+        "model": device_model(device_cfg).product_name,
         "serial_number": device_id,
         "via_device": (DOMAIN, entry_id),
     }
@@ -49,9 +62,16 @@ def build_device_cfg(
     layout is the default when the submission has none, and an empty name clears the stored name.
     """
     cfg = dict(current or {})
-    cfg[CONF_ACTIVE_BUTTONS] = user_input.get(
-        CONF_ACTIVE_BUTTONS, cfg.get(CONF_ACTIVE_BUTTONS, DEFAULT_ACTIVE_BUTTONS)
-    )
+    chosen = DEVICE_MODELS.get(user_input.get(CONF_DEVICE_MODEL))
+    if chosen is not None and chosen is not WALL_PLATE:
+        cfg[CONF_DEVICE_MODEL] = chosen.key  # a Wall plate stores no model: none means Wall plate
+    # Only a Wall plate has a Button layout.
+    if device_model(cfg).has_buttons:
+        cfg[CONF_ACTIVE_BUTTONS] = user_input.get(
+            CONF_ACTIVE_BUTTONS, cfg.get(CONF_ACTIVE_BUTTONS, DEFAULT_ACTIVE_BUTTONS)
+        )
+    else:
+        cfg.pop(CONF_ACTIVE_BUTTONS, None)
     name = (user_input.get(CONF_NAME) or "").strip()
     if name:
         cfg[CONF_NAME] = name

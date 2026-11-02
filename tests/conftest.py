@@ -101,7 +101,10 @@ def add_config_entry(hass) -> Callable[..., config_entries.ConfigEntry]:
 
 async def _set_up_platform(hass, entry: config_entries.ConfigEntry, domain: str, module) -> None:
     """Run an Edisio entity platform for ``entry``, as HA would after the entry's setup."""
-    hass.data.setdefault(DOMAIN, {}).setdefault(entry.entry_id, {"devices": set()})
+    # Without the entry's setup, a connected stub stands in for the Dongle's hub.
+    hass.data.setdefault(DOMAIN, {}).setdefault(
+        entry.entry_id, {"devices": set(), "hub": MagicMock(connected=True)}
+    )
     platform = EntityPlatform(
         hass=hass,
         logger=logging.getLogger(__name__),
@@ -132,5 +135,15 @@ def set_up_binary_sensor_platform(hass) -> Callable[[config_entries.ConfigEntry]
 
     async def _set_up(entry: config_entries.ConfigEntry) -> None:
         await _set_up_platform(hass, entry, "binary_sensor", binary_sensor)
+
+    return _set_up
+
+
+@pytest.fixture
+def set_up_platform(hass) -> Callable[..., Awaitable[None]]:
+    """Run one Edisio platform module (sensor, binary_sensor) for ``entry``."""
+
+    async def _set_up(entry: config_entries.ConfigEntry, module, domain: str) -> None:
+        await _set_up_platform(hass, entry, domain, module)
 
     return _set_up

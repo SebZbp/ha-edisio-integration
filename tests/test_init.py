@@ -126,8 +126,8 @@ async def test_init_triggers_discovery_for_unconfigured_device():
         hass.async_create_task.assert_called_once()
         hass.config_entries.flow.async_init.assert_called_once_with(
             DOMAIN,
-            context={"source": "device", "device_id": "02"},
-            data={"device_id": "02", "button": "01"}
+            context={"source": "integration_discovery", "device_id": "02"},
+            data={"device_id": "02", "button": "01", "model_code": ""}
         )
 
 
@@ -229,6 +229,40 @@ async def test_repeated_presses_while_flow_pending_are_logged(caplog):
     hass.config_entries.flow.async_init.assert_not_called()
     assert "already in progress for 02" in caplog.text
 
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("button, cmd", [("01", "01"), ("01", "2F"), ("01", "0A")])
+async def test_model_code_09_from_unconfigured_radio_id_starts_opening_sensor_flow(button, cmd):
+    hass, entry = _setup_unconfigured()
+    await _press(hass, entry, {"id": "91107A5D", "button": button, "mid": "09", "cmd": cmd, "action": "x"})
+
+    hass.config_entries.flow.async_init.assert_called_once_with(
+        DOMAIN,
+        context={"source": "integration_discovery", "device_id": "91107A5D"},
+        data={"device_id": "91107A5D", "button": button, "model_code": "09"},
+    )
+
+
+@pytest.mark.asyncio
+async def test_wall_plate_model_code_is_passed_to_the_flow():
+    hass, entry = _setup_unconfigured()
+    await _press(hass, entry, {"id": "06708E57", "button": "05", "mid": "01", "cmd": "03", "action": "x"})
+
+    hass.config_entries.flow.async_init.assert_called_once_with(
+        DOMAIN,
+        context={"source": "integration_discovery", "device_id": "06708E57"},
+        data={"device_id": "06708E57", "button": "05", "model_code": "01"},
+    )
+
+
+@pytest.mark.asyncio
+async def test_model_code_09_with_flow_in_progress_starts_no_second_flow():
+    hass, entry = _setup_unconfigured(
+        progress=[{"handler": DOMAIN, "context": {"device_id": "91107A5D"}}]
+    )
+    await _press(hass, entry, {"id": "91107A5D", "button": "01", "mid": "09", "cmd": "01", "action": "x"})
+
+    hass.config_entries.flow.async_init.assert_not_called()
 
 @pytest.fixture
 def integration(hass):

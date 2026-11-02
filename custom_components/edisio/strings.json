@@ -1,5 +1,6 @@
 {
   "config": {
+    "flow_title": "{name}",
     "abort": {
       "single_instance_allowed": "Only a single configuration of Edisio is allowed.",
       "device_configured": "Edisio device {device_id} configured successfully."
@@ -20,7 +21,15 @@
         "description": "Button {button} was pressed on Device {device_id}. Select the Button layout of the Device, and optionally name it (e.g. BP Kitchen) and choose its area.",
         "data": {
           "active_buttons": "Button layout (number of active Buttons, 1-5)",
-          "name": "Name (optional, default: Edisio EBP8-B <Radio ID>)",
+          "name": "Name (optional, default: Edisio EBP8-B followed by the Radio ID)",
+          "area_id": "Area (optional)"
+        }
+      },
+      "opening_sensor_confirm": {
+        "title": "Configure Opening sensor {device_id}",
+        "description": "Opening sensor {device_id} was detected. Optionally name it (e.g. Front door) and choose its area.",
+        "data": {
+          "name": "Name (optional, default: Edisio Opening sensor followed by the Radio ID)",
           "area_id": "Area (optional)"
         }
       }
@@ -50,8 +59,9 @@
         "description": "Enter the Radio ID of the Device without pressing it. Optionally name it (e.g. BP Kitchen) and choose its area.",
         "data": {
           "radio_id": "Radio ID",
-          "active_buttons": "Button layout (number of active Buttons, 1-5)",
-          "name": "Name (optional, default: Edisio EBP8-B <Radio ID>)",
+          "device_model": "Device model",
+          "active_buttons": "Button layout (Wall plate only: number of active Buttons, 1-5)",
+          "name": "Name (optional, default: Edisio EBP8-B or Edisio Opening sensor, followed by the Radio ID)",
           "area_id": "Area (optional)"
         },
         "data_description": {
@@ -77,7 +87,7 @@
         "description": "Changing the name replaces any name set on the Home Assistant device page.",
         "data": {
           "active_buttons": "Button layout (number of active Buttons, 1 to 5)",
-          "name": "Name (empty: default Edisio EBP8-B <Radio ID>)",
+          "name": "Name (empty: default name with the Radio ID)",
           "area_id": "Area",
           "update_entity_ids": "Also update entity IDs to match the name"
         },
@@ -85,6 +95,14 @@
           "active_buttons": "Button sensors for Button numbers that are no longer in the layout are removed; the others are kept.",
           "update_entity_ids": "Off by default: dashboards and scripts using the old entity IDs keep working. Unique IDs never change."
         }
+      }
+    }
+  },
+  "selector": {
+    "device_model": {
+      "options": {
+        "wall_plate": "Wall plate",
+        "opening_sensor": "Opening sensor"
       }
     }
   }
