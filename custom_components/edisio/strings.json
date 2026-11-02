@@ -58,8 +58,9 @@
         "description": "Enter the Radio ID of the Device without pressing it. Optionally name it (e.g. BP Kitchen) and choose its area.",
         "data": {
           "radio_id": "Radio ID",
-          "active_buttons": "Button layout (number of active Buttons, 1-5)",
-          "name": "Name (optional, default: Edisio EBP8-B <Radio ID>)",
+          "device_model": "Device model",
+          "active_buttons": "Button layout (Wall plate only: number of active Buttons, 1-5)",
+          "name": "Name (optional, default: Edisio EBP8-B or Edisio Opening sensor <Radio ID>)",
           "area_id": "Area (optional)"
         },
         "data_description": {
@@ -85,7 +86,7 @@
         "description": "Changing the name replaces any name set on the Home Assistant device page.",
         "data": {
           "active_buttons": "Button layout (number of active Buttons, 1 to 5)",
-          "name": "Name (empty: default Edisio EBP8-B <Radio ID>)",
+          "name": "Name (empty: default name with the Radio ID)",
           "area_id": "Area",
           "update_entity_ids": "Also update entity IDs to match the name"
         },
@@ -93,6 +94,14 @@
           "active_buttons": "Button sensors for Button numbers that are no longer in the layout are removed; the others are kept.",
           "update_entity_ids": "Off by default: dashboards and scripts using the old entity IDs keep working. Unique IDs never change."
         }
+      }
+    }
+  },
+  "selector": {
+    "device_model": {
+      "options": {
+        "wall_plate": "Wall plate",
+        "opening_sensor": "Opening sensor"
       }
     }
   }

@@ -15,6 +15,7 @@ from .const import (
     DEFAULT_ACTIVE_BUTTONS,
 )
 from .device import apply_area, build_device_cfg
+from .models import CONF_DEVICE_MODEL, DEVICE_MODELS, WALL_PLATE
 
 _RADIO_ID = re.compile(r"[0-9A-F]{8}")
 
@@ -44,6 +45,13 @@ class AddDeviceSteps:
             step_id="add_device",
             data_schema=vol.Schema({
                 vol.Required(CONF_RADIO_ID): str,
+                vol.Required(CONF_DEVICE_MODEL, default=WALL_PLATE.key): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=list(DEVICE_MODELS),
+                        translation_key=CONF_DEVICE_MODEL,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
+                ),
                 vol.Required(CONF_ACTIVE_BUTTONS, default=DEFAULT_ACTIVE_BUTTONS): vol.All(
                     vol.Coerce(int), vol.Range(min=1, max=5)
                 ),
