@@ -9,12 +9,13 @@ from homeassistant.helpers import device_registry as dr
 from .const import DOMAIN, CONF_SERIAL_PORT
 from .hub import EdisioHub
 from .press import PressFilter
+from .models import device_model
 
 _LOGGER = logging.getLogger(__name__)
 
 EBP8_BUTTONS = {f"{n:02d}" for n in range(1, 9)}
 
-PLATFORMS: List[str] = ["sensor"]
+PLATFORMS: List[str] = ["sensor", "binary_sensor"]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
@@ -73,15 +74,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     )
                 return
 
-            # Fire edisio_button_event for automation triggers
-            action: str = event_data.get("action", "")
-            press_type: str = "long_press" if action in ["up", "down"] else "short_press"
-            event_payload: Dict[str, str] = {
-                "device_id": device_id,
-                "button": event_data.get("button", ""),
-                "type": press_type
-            }
-            hass.bus.async_fire("edisio_button_event", event_payload)
+            # Only a Wall plate fires edisio_button_event for automation triggers
+            if device_model(configured_devices[device_id]).has_buttons:
+                action: str = event_data.get("action", "")
+                press_type: str = "long_press" if action in ["up", "down"] else "short_press"
+                event_payload: Dict[str, str] = {
+                    "device_id": device_id,
+                    "button": event_data.get("button", ""),
+                    "type": press_type
+                }
+                hass.bus.async_fire("edisio_button_event", event_payload)
             
             # Handle device discovery and sensor updates
             if device_id not in hass.data[DOMAIN][entry.entry_id]["devices"]:

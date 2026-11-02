@@ -8,6 +8,7 @@ from homeassistant.const import PERCENTAGE
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from .const import DOMAIN, BUTTON_LAYOUTS, DEFAULT_ACTIVE_BUTTONS
 from .device import device_info
+from .models import device_model
 
 async def async_setup_entry(
     hass: HomeAssistant, 
@@ -38,7 +39,9 @@ async def async_setup_entry(
 
 
 def _device_sensors(device_id: str, device_cfg: Dict[str, Any], entry_id: str) -> List[SensorEntity]:
-    """The Battery sensor plus one Button sensor per Button number of the Device's Button layout."""
+    """The Battery sensor, plus one Button sensor per Button number of a Wall plate's Button layout."""
+    if not device_model(device_cfg).has_buttons:
+        return [EdisioBatterySensor(device_id, entry_id, device_cfg)]
     button_layout = device_cfg.get("active_buttons", DEFAULT_ACTIVE_BUTTONS)
     return [EdisioBatterySensor(device_id, entry_id, device_cfg)] + [
         EdisioButtonSensor(device_id, button_number, entry_id, device_cfg)

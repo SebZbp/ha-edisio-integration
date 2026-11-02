@@ -72,3 +72,25 @@ def set_up_sensor_platform(hass) -> Callable[[config_entries.ConfigEntry], Await
         await hass.async_block_till_done()
 
     return _set_up
+
+
+@pytest.fixture
+def set_up_platform(hass) -> Callable[..., Awaitable[None]]:
+    """Run one Edisio platform module (sensor, binary_sensor) for ``entry``."""
+
+    async def _set_up(entry: config_entries.ConfigEntry, module, domain: str) -> None:
+        hass.data.setdefault(DOMAIN, {}).setdefault(entry.entry_id, {"devices": set()})
+        platform = EntityPlatform(
+            hass=hass,
+            logger=logging.getLogger(__name__),
+            domain=domain,
+            platform_name=DOMAIN,
+            platform=module,
+            scan_interval=timedelta(seconds=30),
+            entity_namespace=None,
+        )
+        platform.config_entry = entry
+        await platform.async_setup_entry(entry)
+        await hass.async_block_till_done()
+
+    return _set_up
