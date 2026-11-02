@@ -96,9 +96,13 @@ async def test_update_entity_ids_renames_binary_sensor_and_battery(hass, entry, 
 
 async def test_remove_sensor_deletes_its_entities(hass, entry, set_up_platform):
     await _set_up_entities(hass, entry, set_up_platform)
-    assert er.async_get(hass).entities
+
+    def sensor_entities():
+        return {e.unique_id for e in er.async_get(hass).entities.values() if e.unique_id.startswith(SENSOR)}
+
+    assert sensor_entities() == {f"{SENSOR}_opening", f"{SENSOR}_battery"}
     result = await _step(hass, entry, "remove_device", {"radio_id": SENSOR})
     assert result["type"] == CREATE
     assert entry.options["devices"] == {}
-    assert not er.async_get(hass).entities
+    assert not sensor_entities()
     assert dr.async_get(hass).async_get_device(identifiers={(DOMAIN, SENSOR)}) is None

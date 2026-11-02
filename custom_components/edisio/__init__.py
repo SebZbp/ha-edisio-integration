@@ -3,6 +3,7 @@ import logging
 from typing import Dict, Any, List
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.components import usb
 from homeassistant.helpers import device_registry as dr
@@ -95,8 +96,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         hass.loop.call_soon_threadsafe(async_handle_event, data)
 
+    @callback
+    def handle_connection_change(connected: bool) -> None:
+        async_dispatcher_send(hass, f"{DOMAIN}_connection_{entry.entry_id}")
+
     hub.register_callback(handle_edisio_event)
-    await hub.connect()
+    hub.register_connection_callback(handle_connection_change)
+    try:
+        await hub.connect()
+    except Exception as err:  # a half-enumerated USB device can raise termios.error too
+        hass.data[DOMAIN].pop(entry.entry_id)
+        raise ConfigEntryNotReady(f"Could not open serial port {port}: {err}") from err
     
     # Reload integration when options change
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
