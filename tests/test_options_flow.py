@@ -79,7 +79,7 @@ async def test_add_device_applies_area_to_registry(hass, entry):
 async def test_add_device_aborts_pending_discovery_flow(hass, entry):
     discovery = await hass.config_entries.flow.async_init(
         DOMAIN,
-        context={"source": "device", "device_id": "0670A248"},
+        context={"source": "integration_discovery", "device_id": "0670A248"},
         data={"device_id": "0670A248", "button": "05"},
     )
     assert discovery["type"] == data_entry_flow.FlowResultType.FORM

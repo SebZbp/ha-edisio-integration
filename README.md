@@ -65,7 +65,7 @@ The serial port is stored as its stable `/dev/serial/by-id/...` path when one ex
 Once the Edisio Dongle is configured:
 1. Press any physical button on a new Edisio switch board.
 2. The integration will automatically intercept the RF signal and trigger a discovery flow.
-3. A discovery notification card will appear on the **Devices & Services** integrations dashboard: **Edisio Device `<Radio ID>` Discovered**.
+3. A discovery card will appear on the **Devices & Services** integrations dashboard, titled **Edisio Wall plate `<Radio ID>`**. A Device with a Model code the integration does not know is titled **Edisio unknown Device `<Radio ID>` (Model code `<code>`)** and is added as a Wall plate.
 4. Click **Configure** on the discovery card. It shows the Radio ID and the Button number that was pressed.
 5. Select the Device's Button layout (number of active Buttons, 1 to 5), and optionally give it a name (default `Edisio EBP8-B <Radio ID>`) and an area:
    * **1 Button:** Button number 05
@@ -83,6 +83,13 @@ Open **Settings** -> **Devices & Services** -> **Edisio** -> **Configure** to ma
 - **Edit a Device:** change its name, Button layout or area (an Opening sensor has no Button layout, so only its name and area are offered). The Device model cannot be changed. Button sensors for Button numbers no longer in the layout are removed and the others are kept. Tick *Also update entity IDs to match the name* to rename entity IDs too (off by default, so dashboards and scripts keep working). Changing the name replaces any name set on the Home Assistant device page.
 - **Remove a Device:** forgets the Device and deletes its sensors. If it is pressed again, a new discovery card is offered.
 
+### Ignoring a Device
+
+To stop being offered a Device you do not want, such as a neighbour's, click **Ignore** on its discovery card. An ignored Device raises no card, gets no sensors and fires no events. Its packets still appear in the debug log.
+
+- **Stop ignoring:** on the Edisio integration page, open the menu and choose **Show ignored**, then **Stop ignoring** on the Device. A new discovery card is offered the next time the Device transmits.
+- **Add a Device** with the Radio ID of an ignored Device adds it and stops ignoring it.
+
 ## Opening sensors
 
 An Opening sensor (EDS-100; EOS-200 untested) is recognised automatically from its Model code `09`, so you never pick its model on the discovery card.
@@ -90,7 +97,7 @@ An Opening sensor (EDS-100; EOS-200 untested) is recognised automatically from i
 ### Adding a sensor
 
 1. Move the magnet away from or against the sensor, or press its Sensor button.
-2. A discovery card **Edisio Device `<Radio ID>` Discovered** appears on the **Devices & Services** dashboard and says it is an Opening sensor.
+2. A discovery card **Edisio Opening sensor `<Radio ID>`** appears on the **Devices & Services** dashboard and says it is an Opening sensor.
 3. Click **Configure**. The card asks only for an optional name (default `Edisio Opening sensor <Radio ID>`) and an area. There is no Button layout.
 4. Submit. You get one device under the Edisio Dongle with an **Open/Closed** sensor and a **Battery** sensor. There are no Button sensors and no `edisio_button_event`.
 

@@ -14,7 +14,7 @@ from .const import (
     CONF_RADIO_ID,
     DEFAULT_ACTIVE_BUTTONS,
 )
-from .device import apply_area, build_device_cfg
+from .device import apply_area, build_device_cfg, ignored_entry
 from .models import CONF_DEVICE_MODEL, DEVICE_MODELS, WALL_PLATE
 
 _RADIO_ID = re.compile(r"[0-9A-F]{8}")
@@ -39,6 +39,9 @@ class AddDeviceSteps:
                 for flow in self.hass.config_entries.flow.async_progress_by_handler(DOMAIN):
                     if flow["context"].get("device_id") == radio_id:
                         self.hass.config_entries.flow.async_abort(flow["flow_id"])
+                ignored = ignored_entry(self.hass, radio_id)
+                if ignored is not None:
+                    await self.hass.config_entries.async_remove(ignored.entry_id)
                 return self._save_devices(devices)
 
         return self.async_show_form(

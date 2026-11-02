@@ -9,8 +9,8 @@ from homeassistant.components import usb
 from homeassistant.helpers import selector
 
 from .const import DOMAIN, CONF_SERIAL_PORT, CONF_ACTIVE_BUTTONS, DEFAULT_ACTIVE_BUTTONS, CONF_NAME, CONF_AREA_ID
-from .device import apply_area, build_device_cfg
-from .models import OPENING_SENSOR, CONF_DEVICE_MODEL
+from .device import apply_area, build_device_cfg, discovery_unique_id
+from .models import OPENING_SENSOR, CONF_DEVICE_MODEL, discovery_title
 from .options_flow import EdisioOptionsFlow
 
 _LOGGER = logging.getLogger(__name__)
@@ -45,7 +45,8 @@ class EdisioConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_usb(self, discovery_info: usb.UsbServiceInfo) -> FlowResult:
         try:
-            if self._async_current_entries():
+            # An Ignored Device's entry is not a Dongle
+            if self._async_current_entries(include_ignore=False):
                 return self.async_abort(reason="single_instance_allowed")
 
             self._serial_port = await self.hass.async_add_executor_job(usb.get_serial_by_id, discovery_info.device)
@@ -75,12 +76,19 @@ class EdisioConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             _LOGGER.exception("Error in async_step_usb_confirm: %s", e)
             raise
 
-    async def async_step_device(self, discovery_info: Dict[str, Any]) -> FlowResult:
+    def _dongle_entry(self) -> Optional[config_entries.ConfigEntry]:
+        """The Dongle's entry; entries of Ignored Devices are skipped."""
+        entries = self._async_current_entries(include_ignore=False)
+        return entries[0] if entries else None
+
+    async def async_step_integration_discovery(self, discovery_info: Dict[str, Any]) -> FlowResult:
         self._device_id = discovery_info["device_id"]
         self._button = discovery_info.get("button", "")
         self._model_code = discovery_info.get("model_code", "")
-        await self.async_set_unique_id(f"edisio_{self._device_id}")
+        await self.async_set_unique_id(discovery_unique_id(self._device_id))
         self._abort_if_unique_id_configured()
+        # Names the card, HA's Ignore confirmation and the ignored entry
+        self.context["title_placeholders"] = {"name": discovery_title(self._device_id, self._model_code)}
         if self._model_code == OPENING_SENSOR.model_code:
             return await self.async_step_opening_sensor_confirm()
         return await self.async_step_device_confirm()
@@ -89,9 +97,8 @@ class EdisioConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: Optional[Dict[str, Any]] = None
     ) -> FlowResult:
         if user_input is not None:
-            entries = self._async_current_entries()
-            if entries:
-                entry = entries[0]
+            entry = self._dongle_entry()
+            if entry:
                 devices = dict(entry.options.get("devices", {}))
                 device_cfg = build_device_cfg({**user_input, CONF_DEVICE_MODEL: OPENING_SENSOR.key})
                 devices[self._device_id] = device_cfg
@@ -119,9 +126,8 @@ class EdisioConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: Optional[Dict[str, Any]] = None
     ) -> FlowResult:
         if user_input is not None:
-            entries = self._async_current_entries()
-            if entries:
-                entry = entries[0]
+            entry = self._dongle_entry()
+            if entry:
                 devices = dict(entry.options.get("devices", {}))
                 device_cfg = build_device_cfg(user_input)
                 devices[self._device_id] = device_cfg
