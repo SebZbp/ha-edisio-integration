@@ -1,17 +1,23 @@
 {
   "domain": "edisio",
   "name": "Edisio Smart Home",
-  "version": "1.4.0",
-  "config_flow": true,
-  "documentation": "https://github.com/SebZbp/ha-edisio-integration",
-  "dependencies": [],
+  "after_dependencies": [
+    "usb"
+  ],
   "codeowners": [],
-  "requirements": ["pyserial-asyncio-fast==0.16"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/SebZbp/ha-edisio-integration",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/SebZbp/ha-edisio-integration/issues",
+  "requirements": [
+    "pyserial-asyncio-fast==0.16"
+  ],
   "usb": [
     {
       "vid": "067B",
       "pid": "2303"
     }
   ],
-  "iot_class": "local_push"
+  "version": "1.4.0"
 }
