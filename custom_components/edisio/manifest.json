@@ -3,9 +3,12 @@
   "name": "Edisio Smart Home",
   "codeowners": [],
   "config_flow": true,
-  "dependencies": [],
+  "dependencies": [
+    "usb"
+  ],
   "documentation": "https://github.com/SebZbp/ha-edisio-integration",
   "iot_class": "local_push",
+  "issue_tracker": "https://github.com/SebZbp/ha-edisio-integration/issues",
   "requirements": [
     "pyserial-asyncio-fast==0.16"
   ],
