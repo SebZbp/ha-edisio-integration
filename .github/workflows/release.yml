@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Tag matches manifest version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          manifest_version="$(jq -r .version custom_components/edisio/manifest.json)"
+          tag_version="${TAG#v}"
+          if [ "$tag_version" != "$manifest_version" ]; then
+            echo "::error file=custom_components/edisio/manifest.json::Tag $TAG does not match manifest version $manifest_version"
+            exit 1
+          fi
+          echo "Tag $TAG matches manifest version $manifest_version"
+
+  hassfest:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: home-assistant/actions/hassfest@master
+
+  hacs:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: hacs/action@main
+        with:
+          category: integration
+
+  pytest:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+      - run: uv sync
+      - run: uv run pytest
+
+  release:
+    needs: [hassfest, hacs, pytest]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        # zip_release is false in hacs.json: HACS installs from the tag's
+        # source, so the release needs no asset.
+        run: gh release create "$TAG" --verify-tag --title "$TAG" --generate-notes

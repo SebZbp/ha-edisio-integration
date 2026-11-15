@@ -192,3 +192,10 @@ A Device sends Button numbers `01` to `08`; which ones depends on its Button lay
 
 > [!NOTE]
 > Automations created from the earlier version of the blueprint (inputs `button_1_*` to `button_5_*` and a typed Device ID) are not migrated. Recreate them from the new blueprint.
+
+## Releasing (maintainers)
+
+Releases are published from tags by `.github/workflows/release.yml`, which fails unless the tag matches `version` in `manifest.json`, runs hassfest, the HACS check and the tests, then creates the GitHub Release the Marketplace installs from.
+
+1. `scripts/release.sh X.Y.Z` opens a PR bumping the manifest version. Merge it once CI is green.
+2. `scripts/release.sh X.Y.Z` again tags the merged commit `vX.Y.Z` and pushes the tag (it asks first).
